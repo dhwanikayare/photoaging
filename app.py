@@ -167,8 +167,8 @@ if image and city:
     st.write("Final Score:", round(PBI,4))
     st.write("Category:", category(PBI))
 
-    if pm25:
+    if pm25 is not None:
         st.write(f"PM2.5 AQI: {pm25}")
 
-   st.image(img, caption="Original")
+    st.image(img, caption="Original")
     st.image(cam, caption="Grad-CAM")
