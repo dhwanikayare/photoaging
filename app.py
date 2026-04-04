@@ -21,7 +21,14 @@ IMG_SIZE = (224, 224)
 @st.cache_data
 def load_aqi():
     df = pd.read_csv("city_pm25_aqi.csv")
+
+    # Rename original CSV columns to clean internal names
+    df = df[["City", "Country", "PM2.5 AQI Value"]].dropna()
+    df.columns = ["city", "country", "pm25_aqi"]
+
     df["city"] = df["city"].str.lower().str.strip()
+    df["country"] = df["country"].str.lower().str.strip()
+
     return df
 
 aqi_df = load_aqi()
