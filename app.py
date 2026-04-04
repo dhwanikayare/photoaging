@@ -3,47 +3,146 @@ import tensorflow as tf
 import numpy as np
 import pandas as pd
 from PIL import Image
+import difflib
 
-# =============================
+# ============================================================
+# PAGE CONFIG
+# ============================================================
+st.set_page_config(
+    page_title="Photoaging Check",
+    page_icon="🌿",
+    layout="centered"
+)
+
+# ============================================================
+# CUSTOM STYLING
+# ============================================================
+st.markdown(
+    """
+    <style>
+    .stApp {
+        background: linear-gradient(180deg, #fffaf5 0%, #f9f4ee 100%);
+    }
+
+    .block-container {
+        max-width: 900px;
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+    }
+
+    .hero-box {
+        background: linear-gradient(135deg, #f7e9dd 0%, #efe7fb 100%);
+        border-radius: 24px;
+        padding: 2rem 1.5rem;
+        text-align: center;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+        margin-bottom: 1.5rem;
+    }
+
+    .hero-title {
+        font-size: 2.6rem;
+        font-weight: 700;
+        color: #4f3f34;
+        margin-bottom: 0.5rem;
+    }
+
+    .hero-subtitle {
+        font-size: 1.05rem;
+        color: #6f6258;
+        max-width: 700px;
+        margin: 0 auto;
+        line-height: 1.6;
+    }
+
+    .section-card {
+        background: #ffffff;
+        border-radius: 20px;
+        padding: 1.2rem 1.2rem 1rem 1.2rem;
+        margin-bottom: 1.1rem;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+    }
+
+    .small-note {
+        font-size: 0.92rem;
+        color: #7d6f65;
+        line-height: 1.5;
+    }
+
+    .result-box {
+        border-radius: 18px;
+        padding: 1rem 1.1rem;
+        margin-top: 0.5rem;
+        margin-bottom: 1rem;
+        font-size: 1rem;
+        line-height: 1.6;
+    }
+
+    .result-low {
+        background-color: #edf8ef;
+        border-left: 6px solid #63b174;
+        color: #245d31;
+    }
+
+    .result-moderate {
+        background-color: #fff7e9;
+        border-left: 6px solid #e6b24d;
+        color: #7b5811;
+    }
+
+    .result-high {
+        background-color: #fdeeee;
+        border-left: 6px solid #d96a6a;
+        color: #7c2525;
+    }
+
+    .fact-box {
+        background: #f7f4ff;
+        border-radius: 16px;
+        padding: 0.9rem 1rem;
+        border: 1px solid #ebe3ff;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+# ============================================================
 # LOAD MODEL
-# =============================
+# ============================================================
 @st.cache_resource
 def load_model():
     return tf.keras.models.load_model("photoaging_model_v1.keras")
 
 model = load_model()
-
 IMG_SIZE = (224, 224)
 
-# =============================
+# ============================================================
 # LOAD AQI DATA
-# =============================
+# Expected CSV columns:
+# City, Country, PM2.5 AQI Value
+# ============================================================
 @st.cache_data
 def load_aqi():
     df = pd.read_csv("city_pm25_aqi.csv")
-
-    # Rename original CSV columns to clean internal names
-    df = df[["City", "Country", "PM2.5 AQI Value"]].dropna()
+    df = df[["City", "Country", "PM2.5 AQI Value"]].dropna().copy()
     df.columns = ["city", "country", "pm25_aqi"]
-
-    df["city"] = df["city"].str.lower().str.strip()
-    df["country"] = df["country"].str.lower().str.strip()
-
+    df["city"] = df["city"].astype(str).str.strip().str.lower()
+    df["country"] = df["country"].astype(str).str.strip().str.lower()
+    df = df.groupby(["city", "country"], as_index=False)["pm25_aqi"].mean()
     return df
 
 aqi_df = load_aqi()
 
-def get_city_pm25(city):
-    city = city.strip().lower()
-    match = aqi_df[aqi_df["city"] == city]
-    if len(match) > 0:
-        return float(match.iloc[0]["pm25_aqi"])
-    return None
+# ============================================================
+# HELPERS
+# ============================================================
+def clamp01(x: float) -> float:
+    return float(max(0.0, min(1.0, x)))
 
 def normalize_pm25(aqi):
     if aqi is None:
         return 0.6
-    elif aqi <= 50:
+    if aqi <= 50:
         return 0.2
     elif aqi <= 100:
         return 0.4
@@ -51,11 +150,7 @@ def normalize_pm25(aqi):
         return 0.6
     elif aqi <= 200:
         return 0.8
-    else:
-        return 1.0
-
-def clamp01(x):
-    return float(max(0.0, min(1.0, x)))
+    return 1.0
 
 def category(score):
     if score < 0.33:
@@ -64,101 +159,215 @@ def category(score):
         return "Moderate"
     return "High"
 
-# =============================
-# UI
-# =============================
-st.set_page_config(page_title="Photoaging Burden Index", layout="centered")
+def get_city_pm25(city_input):
+    city_input = city_input.strip().lower()
+    matches = aqi_df[aqi_df["city"] == city_input]
 
-st.title("Photoaging Burden Index")
-st.write(
-    "Upload a clear frontal face image or take one using your camera, then answer a few lifestyle questions."
+    if len(matches) == 0:
+        return None, None, 0
+
+    if len(matches) == 1:
+        row = matches.iloc[0]
+        return float(row["pm25_aqi"]), row["country"], 1
+
+    mean_pm25 = float(matches["pm25_aqi"].mean())
+    countries = ", ".join(sorted(matches["country"].dropna().astype(str).str.title().unique()))
+    return mean_pm25, countries, len(matches)
+
+def get_city_suggestions(city_input, n=5):
+    city_input = city_input.strip().lower()
+    city_list = sorted(aqi_df["city"].dropna().unique().tolist())
+    suggestions = difflib.get_close_matches(city_input, city_list, n=n, cutoff=0.6)
+    return [s.title() for s in suggestions]
+
+def get_risk_text(risk_label):
+    if risk_label == "Low":
+        return "Your image currently shows limited visible signs associated with photoaging."
+    elif risk_label == "Moderate":
+        return "Your image shows some visible signs associated with photoaging, and your lifestyle profile suggests moderate cumulative exposure."
+    return "Your image shows stronger visible signs associated with photoaging, and your lifestyle profile suggests elevated cumulative exposure."
+
+def build_recommendations(hours, cigs, pollution_score, sunscreen):
+    tips = []
+
+    if sunscreen == "no":
+        tips.append("Try using sunscreen daily, especially before prolonged outdoor exposure.")
+
+    if hours >= 4:
+        tips.append("Consider reducing long periods of direct sun exposure, especially around midday.")
+
+    if cigs > 0:
+        tips.append("Smoking is associated with faster visible skin aging. Reducing or stopping can support skin health.")
+
+    if pollution_score >= 0.6:
+        tips.append("Higher pollution exposure may contribute to skin stress. Cleansing and supportive skincare habits may help.")
+
+    if hours <= 2 and cigs == 0 and sunscreen == "yes" and pollution_score < 0.6:
+        tips.append("Your current habits look relatively protective. Maintaining them may help reduce long-term photoaging risk.")
+
+    return tips
+
+def predict_visible_photoaging(img_pil):
+    img = img_pil.convert("RGB").resize(IMG_SIZE)
+    img_np = np.array(img).astype(np.float32)
+    img_batch = np.expand_dims(img_np, axis=0)
+
+    x = tf.keras.applications.mobilenet_v2.preprocess_input(img_batch)
+    pred = model.predict(x, verbose=0)
+    return float(pred[0, 0]), img
+
+# ============================================================
+# HERO SECTION
+# ============================================================
+st.markdown(
+    """
+    <div class='hero-box'>
+        <div class='hero-title'>Photoaging Check</div>
+        <div class='hero-subtitle'>
+            Upload a face image or take a picture, answer a few lifestyle questions,
+            and get a simple estimate of your visible photoaging risk with practical skin safety suggestions.
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True
 )
 
-# -----------------------------
+# ============================================================
 # IMAGE INPUT
-# -----------------------------
-st.subheader("Image Input")
-tab1, tab2 = st.tabs(["Upload Image", "Take a Picture"])
+# ============================================================
+st.markdown("<div class='section-card'>", unsafe_allow_html=True)
+st.subheader("1. Add your face image")
+st.markdown(
+    "<div class='small-note'>For best results, use a clear frontal face image with minimal background and good lighting.</div>",
+    unsafe_allow_html=True
+)
 
-uploaded_image = None
+tab1, tab2 = st.tabs(["Upload Image", "Take a Picture"])
+selected_image = None
 
 with tab1:
     uploaded_image = st.file_uploader("Upload a face image", type=["jpg", "jpeg", "png"])
+    if uploaded_image is not None:
+        selected_image = uploaded_image
 
 with tab2:
     camera_image = st.camera_input("Take a picture")
     if camera_image is not None:
-        uploaded_image = camera_image
+        selected_image = camera_image
 
-# -----------------------------
-# FORM (WITH SUBMIT BUTTON)
-# -----------------------------
+st.markdown("</div>", unsafe_allow_html=True)
+
+# ============================================================
+# QUESTIONNAIRE
+# ============================================================
 with st.form("photoaging_form"):
+    st.markdown("<div class='section-card'>", unsafe_allow_html=True)
+    st.subheader("2. Lifestyle questionnaire")
 
-    st.subheader("Lifestyle Questionnaire")
+    hours = st.slider("How many hours do you usually spend outdoors during daylight each day?", 0.0, 8.0, 2.0, 0.5)
+    cigs = st.number_input("How many cigarettes do you smoke per day?", min_value=0, max_value=40, value=0, step=1)
+    city = st.text_input("Which city do you live in most of the time?")
+    sunscreen = st.selectbox("Do you apply sunscreen daily?", ["yes", "no"])
 
-    hours = st.slider("Average hours outdoors per day", 0.0, 8.0, 2.0, 0.5)
-    cigs = st.number_input("Cigarettes per day", 0, 40, 0)
-    city = st.text_input("City")
-    sunscreen = st.selectbox("Daily sunscreen use", ["yes", "no"])
+    submitted = st.form_submit_button("Check My Photoaging Risk")
+    st.markdown("</div>", unsafe_allow_html=True)
 
-    submitted = st.form_submit_button("Calculate Photoaging Score")
-
-# -----------------------------
-# RUN ONLY AFTER SUBMIT
-# -----------------------------
+# ============================================================
+# RUN
+# ============================================================
 if submitted:
-
-    if uploaded_image is None:
-        st.error("Please upload or capture an image.")
-    elif not city:
+    if selected_image is None:
+        st.error("Please upload an image or take a picture before submitting.")
+    elif not city.strip():
         st.error("Please enter your city.")
     else:
-        # Image processing
-        img = Image.open(uploaded_image).convert("RGB").resize(IMG_SIZE)
-        img_np = np.array(img).astype(np.float32)
-        img_batch = np.expand_dims(img_np, axis=0)
+        img_pil = Image.open(selected_image)
+        visible_score, display_img = predict_visible_photoaging(img_pil)
 
-        # CNN prediction
-        x = tf.keras.applications.mobilenet_v2.preprocess_input(img_batch)
-        pred = model.predict(x, verbose=0)
-        P_vis = float(pred[0, 0])
+        uv_score = clamp01(hours / 6.0)
+        smoking_score = clamp01(cigs / 20.0)
 
-        # Questionnaire
-        U = clamp01(hours / 6.0)
-        S = clamp01(cigs / 20.0)
+        pm25_value, matched_country, city_matches = get_city_pm25(city)
+        pollution_score = normalize_pm25(pm25_value)
 
-        pm25 = get_city_pm25(city)
-        P = normalize_pm25(pm25)
+        sunscreen_protection = 1.0 if sunscreen == "yes" else 0.0
 
-        C = 1.0 if sunscreen == "yes" else 0.0
-
-        # Exposure risk
-        R_exp = clamp01(
-            0.70 * U +
-            0.15 * S +
-            0.10 * P +
-            0.05 * (1 - C)
+        exposure_score = clamp01(
+            0.70 * uv_score +
+            0.15 * smoking_score +
+            0.10 * pollution_score +
+            0.05 * (1 - sunscreen_protection)
         )
 
-        # Final score
-        PBI = clamp01(0.80 * P_vis + 0.20 * R_exp)
+        final_score = clamp01(0.80 * visible_score + 0.20 * exposure_score)
+        risk_label = category(final_score)
+        risk_text = get_risk_text(risk_label)
+        tips = build_recommendations(hours, cigs, pollution_score, sunscreen)
 
-        # -----------------------------
-        # RESULTS
-        # -----------------------------
-        st.subheader("Results")
+        st.markdown("<div class='section-card'>", unsafe_allow_html=True)
+        st.subheader("3. Your result")
+
+        if risk_label == "Low":
+            st.markdown(f"<div class='result-box result-low'><b>Low Photoaging Risk</b><br>{risk_text}</div>", unsafe_allow_html=True)
+        elif risk_label == "Moderate":
+            st.markdown(f"<div class='result-box result-moderate'><b>Moderate Photoaging Risk</b><br>{risk_text}</div>", unsafe_allow_html=True)
+        else:
+            st.markdown(f"<div class='result-box result-high'><b>High Photoaging Risk</b><br>{risk_text}</div>", unsafe_allow_html=True)
 
         col1, col2, col3 = st.columns(3)
-        col1.metric("Facial Score", f"{P_vis:.3f}")
-        col2.metric("Exposure Risk", f"{R_exp:.3f}")
-        col3.metric("Final PBI", f"{PBI:.3f}")
+        col1.metric("Visible Skin Change", f"{visible_score:.2f}")
+        col2.metric("Exposure Profile", f"{exposure_score:.2f}")
+        col3.metric("Overall Result", risk_label)
 
-        st.write("Severity Category:", category(PBI))
+        st.markdown("</div>", unsafe_allow_html=True)
 
-        if pm25 is not None:
-            st.write(f"PM2.5 AQI for {city.title()}: {pm25:.1f}")
+        st.markdown("<div class='section-card'>", unsafe_allow_html=True)
+        st.subheader("What this means")
+        st.write(
+            "Photoaging refers to visible skin changes linked to long-term environmental exposure, especially ultraviolet radiation. "
+            "It may appear as wrinkles, dark spots, uneven skin tone, or reduced skin elasticity."
+        )
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        st.markdown("<div class='section-card'>", unsafe_allow_html=True)
+        st.subheader("Personalized suggestions")
+        for tip in tips:
+            st.write(f"• {tip}")
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        st.markdown("<div class='section-card'>", unsafe_allow_html=True)
+        st.subheader("Helpful skin health facts")
+        st.markdown("<div class='fact-box'>", unsafe_allow_html=True)
+        st.write("• Chronic sun exposure is the main external factor linked to photoaging.")
+        st.write("• Visible photoaging can appear as wrinkles, dark spots, uneven tone, and texture changes.")
+        st.write("• Consistent sunscreen use can help reduce cumulative UV-related skin damage.")
+        st.write("• Smoking and environmental pollution may contribute to long-term skin stress.")
+        st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        st.markdown("<div class='section-card'>", unsafe_allow_html=True)
+        st.subheader("Pollution information")
+        if pm25_value is not None:
+            if city_matches == 1:
+                st.write(f"Matched city data: **{city.strip().title()}**, **{matched_country.title()}**")
+            else:
+                st.write(f"Matched city data from **{city_matches} records** for **{city.strip().title()}** across: **{matched_country}**")
+            st.write(f"Estimated PM2.5 AQI: **{pm25_value:.1f}**")
         else:
-            st.warning("City not found. Default pollution score used.")
+            suggestions = get_city_suggestions(city)
+            st.warning("City pollution data was not found. A default pollution estimate was used.")
+            if suggestions:
+                st.write("Did you mean:")
+                for s in suggestions:
+                    st.write(f"• {s}")
+        st.markdown("</div>", unsafe_allow_html=True)
 
-        st.image(img, caption="Input Face Image", use_container_width=True)
+        st.markdown("<div class='section-card'>", unsafe_allow_html=True)
+        st.subheader("Uploaded image")
+        st.image(display_img, use_container_width=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        st.caption(
+            "This tool is intended for educational and research purposes only. "
+            "It does not provide a medical diagnosis or replace professional dermatological advice."
+        )
