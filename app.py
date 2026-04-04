@@ -170,5 +170,5 @@ if image and city:
     if pm25:
         st.write(f"PM2.5 AQI: {pm25}")
 
-    st.image(img_np.astype(np.uint8), caption="Original")
+   st.image(img, caption="Original")
     st.image(cam, caption="Grad-CAM")
