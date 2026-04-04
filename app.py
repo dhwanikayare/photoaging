@@ -24,7 +24,7 @@ LAST_CONV_LAYER_NAME = "Conv_1"
 # =============================
 @st.cache_data
 def load_aqi():
-    df = pd.read_csv("AQI and Lat Long of Countries.csv")
+    df = pd.read_csv("city_pm25_aqi.csv")
 
     df = df[["City", "Country", "PM2.5 AQI Value"]].dropna()
     df.columns = ["city", "country", "pm25"]
