@@ -897,6 +897,7 @@ def spacer(h=20):
 # ============================================================
 def render_landing():
     st.markdown("<div class='fade-in'>", unsafe_allow_html=True)
+
     st.markdown(
         """
         <div class='hero-shell'>
@@ -920,22 +921,23 @@ def render_landing():
     st.markdown("</div>", unsafe_allow_html=True)
 
     c1, c2, c3 = st.columns(3, gap="large")
+
     facts = [
         (
             "Photoaging reflects cumulative UV damage",
-            "Chronic ultraviolet exposure causes collagen breakdown, elastin damage, and pigmentation changes that become visible over time.",
+            "Chronic ultraviolet exposure causes collagen breakdown...",
         ),
         (
             "Visible skin changes are biologically meaningful",
-            "Wrinkles, uneven tone, and texture variation often reflect underlying skin damage from long term environmental exposure.",
+            "Wrinkles, uneven tone...",
         ),
         (
             "Early detection supports prevention",
-            "Visible photoaging can help raise early awareness of cumulative UV exposure and encourage protective skin habits.",
+            "Visible photoaging can help...",
         ),
     ]
 
-        for col, (title, copy) in zip([c1, c2, c3], facts):
+    for col, (title, copy) in zip([c1, c2, c3], facts):
         with col:
             st.markdown(
                 f"""
@@ -958,7 +960,6 @@ def render_landing():
             time.sleep(0.6)
         st.session_state.app_screen = "image_step"
         st.rerun()
-
 # ============================================================
 # IMAGE STEP
 # ============================================================
