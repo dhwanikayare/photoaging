@@ -854,7 +854,7 @@ def render_landing():
                 unsafe_allow_html=True,
             )
 
-    
+    st.markdown("<div style='height:0.7rem;'></div>", unsafe_allow_html=True)
     if st.button("Analyze My Skin"):
         with st.spinner("Preparing analysis..."):
             time.sleep(0.6)
@@ -1179,7 +1179,7 @@ def render_results():
             st.markdown("<div class='section-note' style='margin-bottom:0;'>Environmental exposure data was not available for the selected city, so a default estimate was used.</div>", unsafe_allow_html=True)
         st.markdown("</div>", unsafe_allow_html=True)
 
-   
+    st.markdown("<div style='height:0.6rem;'></div>", unsafe_allow_html=True)
     if st.button("Start New Analysis"):
         reset_analysis()
         st.rerun()
