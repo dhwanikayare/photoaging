@@ -325,6 +325,7 @@ st.markdown(
         border: 1px solid rgba(31,41,55,0.07);
         box-shadow: var(--shadow-sm);
         margin-top: 0.4rem;
+        background: #0f172a;
     }
 
     .scanner-overlay {
@@ -332,18 +333,108 @@ st.markdown(
         inset: 0;
         pointer-events: none;
         background:
-            linear-gradient(to bottom,
+            linear-gradient(
+                to bottom,
                 rgba(255,255,255,0.00) 0%,
-                rgba(217,119,87,0.12) 46%,
-                rgba(217,119,87,0.28) 50%,
-                rgba(217,119,87,0.12) 54%,
-                rgba(255,255,255,0.00) 100%);
-        animation: scanline 2.4s linear infinite;
+                rgba(34,211,238,0.12) 42%,
+                rgba(34,211,238,0.45) 50%,
+                rgba(34,211,238,0.12) 58%,
+                rgba(255,255,255,0.00) 100%
+            );
+        animation: scanline 1.6s linear infinite;
+        z-index: 3;
+    }
+
+    .scanner-tint {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background: radial-gradient(circle at center, rgba(34,211,238,0.08), rgba(15,23,42,0.12));
+        z-index: 1;
+    }
+
+    .scanner-face-box {
+        position: absolute;
+        top: 16%;
+        left: 22%;
+        width: 56%;
+        height: 68%;
+        border: 2px solid rgba(34,211,238,0.85);
+        border-radius: 26px;
+        box-shadow: 0 0 0 1px rgba(255,255,255,0.10), 0 0 24px rgba(34,211,238,0.35);
+        animation: scannerPulse 1.8s ease-in-out infinite;
+        z-index: 4;
+    }
+
+    .scanner-corner {
+        position: absolute;
+        width: 34px;
+        height: 34px;
+        border-color: rgba(34,211,238,0.95);
+        border-style: solid;
+        animation: cornerPulse 1.4s ease-in-out infinite;
+        z-index: 5;
+        box-shadow: 0 0 14px rgba(34,211,238,0.30);
+    }
+
+    .scanner-corner.tl {
+        top: calc(16% - 6px);
+        left: calc(22% - 6px);
+        border-width: 3px 0 0 3px;
+        border-top-left-radius: 12px;
+    }
+
+    .scanner-corner.tr {
+        top: calc(16% - 6px);
+        right: calc(22% - 6px);
+        border-width: 3px 3px 0 0;
+        border-top-right-radius: 12px;
+    }
+
+    .scanner-corner.bl {
+        bottom: calc(16% - 6px);
+        left: calc(22% - 6px);
+        border-width: 0 0 3px 3px;
+        border-bottom-left-radius: 12px;
+    }
+
+    .scanner-corner.br {
+        bottom: calc(16% - 6px);
+        right: calc(22% - 6px);
+        border-width: 0 3px 3px 0;
+        border-bottom-right-radius: 12px;
+    }
+
+    .scanner-status {
+        position: absolute;
+        left: 50%;
+        bottom: 18px;
+        transform: translateX(-50%);
+        padding: 0.42rem 0.8rem;
+        border-radius: 999px;
+        background: rgba(15,23,42,0.72);
+        color: #d5f9ff;
+        font-size: 0.82rem;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        z-index: 6;
+        border: 1px solid rgba(34,211,238,0.26);
+        backdrop-filter: blur(6px);
     }
 
     @keyframes scanline {
-        0% { transform: translateY(-100%); }
-        100% { transform: translateY(100%); }
+        0% { transform: translateY(-120%); }
+        100% { transform: translateY(120%); }
+    }
+
+    @keyframes scannerPulse {
+        0%, 100% { opacity: 0.75; transform: scale(1); }
+        50% { opacity: 1; transform: scale(1.015); }
+    }
+
+    @keyframes cornerPulse {
+        0%, 100% { opacity: 0.7; }
+        50% { opacity: 1; }
     }
 
     .result-banner {
@@ -744,6 +835,20 @@ def save_uploaded_image(file_obj, source_label: str):
         st.session_state.selected_image_source = source_label
 
 
+def render_scanner_preview(img, status_text="Scanning face..."):
+    st.markdown("<div class='scanner-frame'>", unsafe_allow_html=True)
+    st.image(img, use_container_width=True)
+    st.markdown("<div class='scanner-tint'></div>", unsafe_allow_html=True)
+    st.markdown("<div class='scanner-overlay'></div>", unsafe_allow_html=True)
+    st.markdown("<div class='scanner-face-box'></div>", unsafe_allow_html=True)
+    st.markdown("<div class='scanner-corner tl'></div>", unsafe_allow_html=True)
+    st.markdown("<div class='scanner-corner tr'></div>", unsafe_allow_html=True)
+    st.markdown("<div class='scanner-corner bl'></div>", unsafe_allow_html=True)
+    st.markdown("<div class='scanner-corner br'></div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='scanner-status'>{status_text}</div>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
+
+
 def predict_visible_photoaging(img_pil):
     img = img_pil.convert("RGB").resize(IMG_SIZE)
     img_np = np.array(img).astype(np.float32)
@@ -900,6 +1005,8 @@ def render_image_step():
         uploaded = st.file_uploader("Upload a face image", type=["jpg", "jpeg", "png"], key="upload_step")
         if uploaded is not None:
             save_uploaded_image(uploaded, "upload")
+            with st.spinner("Preparing scan..."):
+                time.sleep(0.7)
 
     with right:
         st.markdown(
@@ -914,13 +1021,13 @@ def render_image_step():
         camera = st.camera_input("Capture a face image", key="camera_step")
         if camera is not None:
             save_uploaded_image(camera, "camera")
+            with st.spinner("Scanning face..."):
+                time.sleep(0.8)
 
     img = image_from_session()
     if img is not None:
         st.markdown("<div class='ready-chip'>Face image ready for analysis</div>", unsafe_allow_html=True)
-        st.markdown("<div class='scanner-frame'>", unsafe_allow_html=True)
-        st.image(img, use_container_width=True)
-        st.markdown("<div class='scanner-overlay'></div></div>", unsafe_allow_html=True)
+        render_scanner_preview(img, "Scan complete")
 
     spacer(16)
     nav_l, nav_c, nav_r = st.columns([1, 1.1, 1], gap="medium")
