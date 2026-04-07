@@ -1089,9 +1089,7 @@ def render_results():
     st.markdown("<div class='section-title' style='font-size:1.35rem; margin-bottom:0.55rem;'>What you can do right now</div>", unsafe_allow_html=True)
     st.markdown(build_html_list(result["immediate_actions"][:2]), unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
-
     st.markdown("<div class='section-title' style='font-size:1.28rem; margin: 1.2rem 0 0.8rem 0;'>Your skin profile</div>", unsafe_allow_html=True)
-       st.markdown("</div>", unsafe_allow_html=True)
     overall_short = {
         "Low": "Lower overall risk profile",
         "Moderate": "Moderate overall risk profile",
@@ -1133,7 +1131,7 @@ def render_results():
             """,
             unsafe_allow_html=True,
         )
-           st.markdown("</div>", unsafe_allow_html=True)
+          
 
     left, right = st.columns([1, 1], gap="large")
 
