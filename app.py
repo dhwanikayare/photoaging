@@ -948,6 +948,7 @@ def render_landing():
             )
 
   spacer(20)
+
 st.markdown("<div style='text-align:center;'>", unsafe_allow_html=True)
 analyze_cta = st.button("Analyze My Skin")
 st.markdown("</div>", unsafe_allow_html=True)
@@ -957,7 +958,6 @@ if analyze_cta:
         time.sleep(0.6)
     st.session_state.app_screen = "image_step"
     st.rerun()
-
 
 # ============================================================
 # IMAGE STEP
