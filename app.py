@@ -538,8 +538,10 @@ st.markdown(
         margin-top: 1.2rem;
     }
 
-    .stButton > button {
-        width: 100%;
+   .stButton > button {
+    width: auto;
+    min-width: 240px;
+    padding: 1rem 2.2rem;
         border-radius: 18px;
         border: none;
         background: linear-gradient(135deg, #d97757 0%, #b96de2 100%);
@@ -945,15 +947,17 @@ def render_landing():
                 unsafe_allow_html=True,
             )
 
-    spacer(14)
-    cta_l, cta_c, cta_r = st.columns([1, 1.15, 1])
-    with cta_c:
-        analyze_cta = st.button("Analyze My Skin")
-    if analyze_cta:
-        with st.spinner("Preparing analysis..."):
-            time.sleep(0.6)
-        st.session_state.app_screen = "image_step"
-        st.rerun()
+  spacer(20)
+
+st.markdown("<div style='text-align:center;'>", unsafe_allow_html=True)
+analyze_cta = st.button("Analyze My Skin")
+st.markdown("</div>", unsafe_allow_html=True)
+
+if analyze_cta:
+    with st.spinner("Preparing analysis..."):
+        time.sleep(0.6)
+    st.session_state.app_screen = "image_step"
+    st.rerun()
 
 
 # ============================================================
