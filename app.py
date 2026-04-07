@@ -922,20 +922,20 @@ def render_landing():
 
     c1, c2, c3 = st.columns(3, gap="large")
 
-    facts = [
-        (
-            "Photoaging reflects cumulative UV damage",
-            "Chronic ultraviolet exposure causes collagen breakdown...",
-        ),
-        (
-            "Visible skin changes are biologically meaningful",
-            "Wrinkles, uneven tone...",
-        ),
-        (
-            "Early detection supports prevention",
-            "Visible photoaging can help...",
-        ),
-    ]
+facts = [
+    (
+        "Photoaging reflects cumulative UV damage",
+        "Chronic ultraviolet exposure causes collagen breakdown, elastin damage, and pigmentation changes that become visible over time.",
+    ),
+    (
+        "Visible skin changes are biologically meaningful",
+        "Wrinkles, uneven tone, and texture variation often reflect underlying skin damage from long term environmental exposure.",
+    ),
+    (
+        "Early detection supports prevention",
+        "Visible photoaging can help raise early awareness of cumulative UV exposure and encourage protective skin habits.",
+    ),
+]
 
     for col, (title, copy) in zip([c1, c2, c3], facts):
         with col:
