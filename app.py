@@ -925,15 +925,15 @@ def render_landing():
     facts = [
         (
             "Photoaging reflects cumulative UV damage",
-            "Chronic ultraviolet exposure causes collagen breakdown...",
+            "Chronic ultraviolet exposure causes collagen breakdown, elastin damage, and pigmentation changes that become visible over time.",
         ),
         (
             "Visible skin changes are biologically meaningful",
-            "Wrinkles, uneven tone...",
+            "Wrinkles, uneven tone, and texture variation often reflect underlying skin damage from long term environmental exposure.",
         ),
         (
-            "Early detection supports prevention",
-            "Visible photoaging can help...",
+             "Early detection supports prevention",
+            "Visible photoaging can help raise early awareness of cumulative UV exposure and encourage protective skin habits.",
         ),
     ]
 
