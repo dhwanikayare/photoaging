@@ -5,7 +5,7 @@ import pandas as pd
 from PIL import Image
 import difflib
 import time
-import cv2
+
 
 # ============================================================
 # PAGE CONFIG
