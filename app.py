@@ -5,6 +5,7 @@ import pandas as pd
 from PIL import Image
 import difflib
 import time
+import cv2
 
 # ============================================================
 # PAGE CONFIG
@@ -355,10 +356,6 @@ st.markdown(
 
     .scanner-face-box {
         position: absolute;
-        top: 16%;
-        left: 22%;
-        width: 56%;
-        height: 68%;
         border: 2px solid rgba(34,211,238,0.85);
         border-radius: 26px;
         box-shadow: 0 0 0 1px rgba(255,255,255,0.10), 0 0 24px rgba(34,211,238,0.35);
@@ -378,29 +375,21 @@ st.markdown(
     }
 
     .scanner-corner.tl {
-        top: calc(16% - 6px);
-        left: calc(22% - 6px);
         border-width: 3px 0 0 3px;
         border-top-left-radius: 12px;
     }
 
     .scanner-corner.tr {
-        top: calc(16% - 6px);
-        right: calc(22% - 6px);
         border-width: 3px 3px 0 0;
         border-top-right-radius: 12px;
     }
 
     .scanner-corner.bl {
-        bottom: calc(16% - 6px);
-        left: calc(22% - 6px);
         border-width: 0 0 3px 3px;
         border-bottom-left-radius: 12px;
     }
 
     .scanner-corner.br {
-        bottom: calc(16% - 6px);
-        right: calc(22% - 6px);
         border-width: 0 3px 3px 0;
         border-bottom-right-radius: 12px;
     }
@@ -835,16 +824,52 @@ def save_uploaded_image(file_obj, source_label: str):
         st.session_state.selected_image_source = source_label
 
 
+def detect_face_box(img_pil):
+    img_rgb = np.array(img_pil.convert("RGB"))
+    gray = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2GRAY)
+
+    face_cascade = cv2.CascadeClassifier(
+        cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
+    )
+
+    faces = face_cascade.detectMultiScale(
+        gray,
+        scaleFactor=1.2,
+        minNeighbors=5,
+        minSize=(80, 80),
+    )
+
+    if len(faces) > 0:
+        x, y, w, h = faces[0]
+        return x, y, w, h, img_rgb.shape[1], img_rgb.shape[0]
+    return None
+
+
 def render_scanner_preview(img, status_text="Scanning face..."):
     st.markdown("<div class='scanner-frame'>", unsafe_allow_html=True)
     st.image(img, use_container_width=True)
     st.markdown("<div class='scanner-tint'></div>", unsafe_allow_html=True)
     st.markdown("<div class='scanner-overlay'></div>", unsafe_allow_html=True)
-    st.markdown("<div class='scanner-face-box'></div>", unsafe_allow_html=True)
-    st.markdown("<div class='scanner-corner tl'></div>", unsafe_allow_html=True)
-    st.markdown("<div class='scanner-corner tr'></div>", unsafe_allow_html=True)
-    st.markdown("<div class='scanner-corner bl'></div>", unsafe_allow_html=True)
-    st.markdown("<div class='scanner-corner br'></div>", unsafe_allow_html=True)
+
+    face_box = detect_face_box(img)
+    if face_box is not None:
+        x, y, w, h, img_w, img_h = face_box
+        left = (x / img_w) * 100
+        top = (y / img_h) * 100
+        width = (w / img_w) * 100
+        height = (h / img_h) * 100
+
+        st.markdown(
+            f"""
+            <div class='scanner-face-box' style='left:{left}%; top:{top}%; width:{width}%; height:{height}%;'></div>
+            <div class='scanner-corner tl' style='left:calc({left}% - 6px); top:calc({top}% - 6px);'></div>
+            <div class='scanner-corner tr' style='left:calc({left + width}% - 28px); top:calc({top}% - 6px);'></div>
+            <div class='scanner-corner bl' style='left:calc({left}% - 6px); top:calc({top + height}% - 28px);'></div>
+            <div class='scanner-corner br' style='left:calc({left + width}% - 28px); top:calc({top + height}% - 28px);'></div>
+            """,
+            unsafe_allow_html=True,
+        )
+
     st.markdown(f"<div class='scanner-status'>{status_text}</div>", unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
