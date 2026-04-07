@@ -1091,6 +1091,7 @@ def render_results():
     st.markdown("</div>", unsafe_allow_html=True)
 
     st.markdown("<div class='section-title' style='font-size:1.28rem; margin: 1.2rem 0 0.8rem 0;'>Your skin profile</div>", unsafe_allow_html=True)
+       st.markdown("</div>", unsafe_allow_html=True)
     overall_short = {
         "Low": "Lower overall risk profile",
         "Moderate": "Moderate overall risk profile",
@@ -1100,8 +1101,6 @@ def render_results():
 
     m1, m2, m3 = st.columns(3, gap="medium")
     with m1:
-        
-   st.markdown("</div>", unsafe_allow_html=True)
         st.markdown(
             f"""
             <div class='metric-card'>
@@ -1134,6 +1133,7 @@ def render_results():
             """,
             unsafe_allow_html=True,
         )
+           st.markdown("</div>", unsafe_allow_html=True)
 
     left, right = st.columns([1, 1], gap="large")
 
