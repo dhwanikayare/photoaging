@@ -1034,44 +1034,37 @@ def render_processing_step():
 # RESULTS STEP
 # ============================================================
 def render_results():
-    st.markdown("<div class='fade-in'>", unsafe_allow_html=True)
     progress_indicator(active_step=3)
     result = st.session_state.result_payload
 
-    # --- REVEAL STAGE 1: TITLE ---
-    st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
+    # Hero result
+    st.markdown("<div class='glass-card fade-in' style='padding: 2rem 2rem 1.8rem 2rem; text-align:center;'>", unsafe_allow_html=True)
     st.markdown("<div class='section-kicker'>Your result</div>", unsafe_allow_html=True)
-    st.markdown("<div class='section-title'>Photoaging assessment</div>", unsafe_allow_html=True)
-    time.sleep(0.4)
-
-    # --- REVEAL STAGE 2: RISK ---
-    time.sleep(0.4)
+    st.markdown("<div class='section-title' style='margin-bottom:0.6rem;'>Photoaging assessment</div>", unsafe_allow_html=True)
     st.markdown(
         f"""
-        <div class='result-banner {banner_class(result['risk_label'])} fade-in'>
-            <div class='result-title'>{result['risk_label']} Photoaging Risk</div>
+        <div class='result-banner {banner_class(result['risk_label'])}' style='max-width: 920px; margin: 0 auto 0.8rem auto; text-align:left;'>
+            <div class='result-title' style='font-size:1.45rem;'>{result['risk_label']} Photoaging Risk</div>
             <div class='result-copy'>{result['risk_text']}</div>
             <div class='pill-row'>
-                <span class='pill'>Visible signal: {result['visible_label']}</span>
-                <span class='pill'>Exposure profile: {result['exposure_label']}</span>
-                <span class='pill'>Overall score: {result['final_score']:.2f}</span>
+                <span class='pill'>Visible signs: {result['visible_label']}</span>
+                <span class='pill'>Exposure level: {result['exposure_label']}</span>
+                <span class='pill'>Score: {result['final_score']:.2f}</span>
             </div>
         </div>
         """,
         unsafe_allow_html=True,
     )
-
     st.markdown("</div>", unsafe_allow_html=True)
 
-    # --- REVEAL STAGE 3: IMMEDIATE ACTIONS ---
-    time.sleep(0.5)
-    st.markdown("<div class='glass-card fade-in'>", unsafe_allow_html=True)
-    st.markdown("<div class='section-title'>What you can improve immediately</div>", unsafe_allow_html=True)
-    st.markdown(build_html_list(result["immediate_actions"]), unsafe_allow_html=True)
+    # Immediate actions
+    st.markdown("<div class='solid-card fade-in' style='padding: 1.3rem 1.4rem;'>", unsafe_allow_html=True)
+    st.markdown("<div class='section-title' style='font-size:1.35rem; margin-bottom:0.55rem;'>What you can do right now</div>", unsafe_allow_html=True)
+    st.markdown(build_html_list(result["immediate_actions"][:2]), unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
-    # --- REVEAL STAGE 4: METRICS ---
-    time.sleep(0.5)
+    # Quick snapshot
+    st.markdown("<div class='section-title' style='font-size:1.28rem; margin: 1.2rem 0 0.8rem 0;'>Your skin profile</div>", unsafe_allow_html=True)
     m1, m2, m3 = st.columns(3, gap="medium")
     with m1:
         st.markdown(
@@ -1099,7 +1092,7 @@ def render_results():
         st.markdown(
             f"""
             <div class='metric-card'>
-                <div class='metric-label'>Overall assessment</div>
+                <div class='metric-label'>Overall risk</div>
                 <div class='metric-value'>{result['risk_label']}</div>
                 <div class='metric-sub'>{result['result_summary']}</div>
             </div>
@@ -1107,72 +1100,52 @@ def render_results():
             unsafe_allow_html=True,
         )
 
-    # --- REVEAL STAGE 5: DEEP INSIGHTS ---
-    time.sleep(0.5)
-    left, right = st.columns([1.05, 0.95], gap="large")
+    # Interpretation and deeper sections
+    left, right = st.columns([1, 1], gap="large")
 
     with left:
         st.markdown("<div class='solid-card'>", unsafe_allow_html=True)
-        st.markdown("<div class='section-title'>What this means</div>", unsafe_allow_html=True)
+        st.markdown("<div class='section-title' style='font-size:1.35rem;'>What this means</div>", unsafe_allow_html=True)
         st.markdown(
-            f"<div class='section-note' style='margin-bottom:0;'>{result['result_summary']} Photoaging refers to visible skin changes linked to long term environmental exposure, especially ultraviolet radiation. It may appear as wrinkles, dark spots, uneven tone, or reduced skin elasticity.</div>",
+            f"<div class='section-note' style='margin-bottom:0;'>Your results suggest that your skin has experienced {result['exposure_label'].lower()}. Most visible aging signs appear {result['visible_label'].lower()}, which is generally consistent with lower cumulative environmental stress over time.</div>",
             unsafe_allow_html=True,
         )
         st.markdown("</div>", unsafe_allow_html=True)
 
         st.markdown("<div class='solid-card'>", unsafe_allow_html=True)
-        st.markdown("<div class='section-title'>Personalized suggestions</div>", unsafe_allow_html=True)
-        st.markdown(build_html_list(result["tips"]), unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
-
-        st.markdown("<div class='solid-card'>", unsafe_allow_html=True)
-        st.markdown("<div class='section-title'>Suggested skin care routine</div>", unsafe_allow_html=True)
-        st.markdown(build_html_list(result["routine"]), unsafe_allow_html=True)
+        st.markdown("<div class='section-title' style='font-size:1.35rem;'>Suggested routine</div>", unsafe_allow_html=True)
+        st.markdown(build_html_list(result["routine"][:4]), unsafe_allow_html=True)
         st.markdown("</div>", unsafe_allow_html=True)
 
     with right:
         st.markdown("<div class='solid-card'>", unsafe_allow_html=True)
-        st.markdown("<div class='section-title'>Helpful skin health facts</div>", unsafe_allow_html=True)
+        st.markdown("<div class='section-title' style='font-size:1.35rem;'>Key insights</div>", unsafe_allow_html=True)
         st.markdown(
             build_html_list([
-                "Chronic sun exposure is the main external factor linked to photoaging.",
-                "Visible photoaging may present as wrinkles, pigmentation changes, uneven tone, or texture changes.",
-                "Consistent sunscreen use can help reduce cumulative UV related skin damage.",
-                "Smoking and environmental pollution may contribute to long term skin stress.",
+                "Long term sun exposure is the main driver of visible photoaging.",
+                "Early protection can reduce future visible skin damage.",
+                "Consistent protective habits matter more than occasional intensive care.",
             ]),
             unsafe_allow_html=True,
         )
         st.markdown("</div>", unsafe_allow_html=True)
 
         st.markdown("<div class='solid-card'>", unsafe_allow_html=True)
-        st.markdown("<div class='section-title'>Pollution insight</div>", unsafe_allow_html=True)
+        st.markdown("<div class='section-title' style='font-size:1.35rem;'>Environmental exposure</div>", unsafe_allow_html=True)
         if result["pm25_value"] is not None:
-            if result["city_matches"] == 1:
-                pollution_header = f"Matched city data: {result['city'].title()}, {result['matched_country'].title()}"
-            else:
-                pollution_header = f"Matched city data from {result['city_matches']} records for {result['city'].title()} across {result['matched_country']}"
-
             pollution_text = (
-                "This pollution level suggests relatively lower environmental skin stress."
+                "Based on your location, environmental exposure levels appear relatively low and are unlikely to significantly increase skin stress at this time."
                 if result["pollution_score"] < 0.33
-                else "This pollution level suggests moderate environmental skin stress that may contribute over time."
+                else "Based on your location, environmental exposure may contribute moderately to long term skin stress over time."
                 if result["pollution_score"] < 0.66
-                else "This pollution level suggests elevated environmental skin stress that may meaningfully contribute over time."
+                else "Based on your location, environmental exposure appears elevated and may meaningfully contribute to long term skin stress."
             )
             st.markdown(
-                f"<div class='section-note'><strong>{pollution_header}</strong><br><br>Estimated PM2.5 AQI: <strong>{result['pm25_value']:.1f}</strong><br><br>{pollution_text}</div>",
+                f"<div class='section-note' style='margin-bottom:0;'><strong>{result['city'].title()}</strong><br><br>Estimated PM2.5 AQI: <strong>{result['pm25_value']:.1f}</strong><br><br>{pollution_text}</div>",
                 unsafe_allow_html=True,
             )
         else:
-            suggestions = get_city_suggestions(result["city"])
-            st.warning("City pollution data was not found. A default pollution estimate was used.")
-            if suggestions:
-                st.markdown(build_html_list([f"Did you mean {s}?" for s in suggestions]), unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
-
-        st.markdown("<div class='solid-card'>", unsafe_allow_html=True)
-        st.markdown("<div class='section-title'>Analyzed image</div>", unsafe_allow_html=True)
-        st.image(result["display_img"], use_container_width=True)
+            st.markdown("<div class='section-note' style='margin-bottom:0;'>Environmental exposure data was not available for the selected city, so a default estimate was used.</div>", unsafe_allow_html=True)
         st.markdown("</div>", unsafe_allow_html=True)
 
     st.markdown("<div style='height:0.6rem;'></div>", unsafe_allow_html=True)
