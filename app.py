@@ -181,7 +181,7 @@ st.markdown(
         border-radius: 24px;
         padding: 1.2rem;
         box-shadow: var(--shadow-sm);
-        margin-bottom: 1rem;
+        margin-bottom: 0.6rem;
     }
 
     .section-kicker {
@@ -486,12 +486,14 @@ st.markdown(
 
     .stButton > button {
         width: 100%;
-        border-radius: 16px;
+        border-radius: 18px;
         border: none;
         background: linear-gradient(135deg, #d97757 0%, #b96de2 100%);
         color: white;
         font-weight: 800;
-        padding: 0.88rem 1rem;
+        padding: 1rem 1.2rem;
+        min-height: 56px;
+        font-size: 1rem;
         box-shadow: 0 10px 20px rgba(185,109,226,0.20);
     }
 
@@ -799,6 +801,10 @@ def reset_analysis():
     st.session_state.result_payload = None
 
 
+def spacer(h=20):
+    st.markdown(f"<div style='height:{h}px;'></div>", unsafe_allow_html=True)
+
+
 # ============================================================
 # LANDING SCREEN
 # ============================================================
@@ -854,8 +860,11 @@ def render_landing():
                 unsafe_allow_html=True,
             )
 
-    st.markdown("<div style='height:0.7rem;'></div>", unsafe_allow_html=True)
-    if st.button("Analyze My Skin"):
+    spacer(14)
+    cta_l, cta_c, cta_r = st.columns([1, 1.15, 1])
+    with cta_c:
+        analyze_cta = st.button("Analyze My Skin")
+    if analyze_cta:
         with st.spinner("Preparing analysis..."):
             time.sleep(0.6)
         st.session_state.app_screen = "image_step"
@@ -913,16 +922,20 @@ def render_image_step():
         st.image(img, use_container_width=True)
         st.markdown("<div class='scanner-overlay'></div></div>", unsafe_allow_html=True)
 
-    nav1, nav2 = st.columns([0.25, 0.75], gap="medium")
-    with nav1:
-        if st.button("Back"):
-            st.session_state.app_screen = "landing"
-            st.rerun()
-    with nav2:
+    spacer(16)
+    nav_l, nav_c, nav_r = st.columns([1, 1.1, 1], gap="medium")
+    with nav_l:
+        back_clicked = st.button("Back")
+    with nav_c:
         continue_disabled = img is None
-        if st.button("Continue", disabled=continue_disabled):
-            st.session_state.app_screen = "lifestyle_step"
-            st.rerun()
+        continue_clicked = st.button("Continue", disabled=continue_disabled)
+
+    if back_clicked:
+        st.session_state.app_screen = "landing"
+        st.rerun()
+    if continue_clicked:
+        st.session_state.app_screen = "lifestyle_step"
+        st.rerun()
 
     st.markdown("</div>", unsafe_allow_html=True)
 
@@ -982,10 +995,11 @@ def render_lifestyle_step():
 
         st.markdown("</div>", unsafe_allow_html=True)
 
-        n1, n2 = st.columns([0.28, 0.72], gap="medium")
-        with n1:
+        spacer(6)
+        nav_l, nav_c, nav_r = st.columns([1, 1.1, 1], gap="medium")
+        with nav_l:
             back_clicked = st.form_submit_button("Back")
-        with n2:
+        with nav_c:
             analyze_clicked = st.form_submit_button("Run Analysis")
 
     if back_clicked:
@@ -1066,13 +1080,13 @@ def render_results():
     progress_indicator(active_step=3)
     result = st.session_state.result_payload
 
-    st.markdown("<div class='glass-card fade-in' style='padding: 2rem 2rem 1.8rem 2rem; text-align:center;'>", unsafe_allow_html=True)
+    st.markdown("<div class='glass-card fade-in' style='padding: 2.2rem 2rem 2rem 2rem; text-align:center;'>", unsafe_allow_html=True)
     st.markdown("<div class='section-kicker'>Your result</div>", unsafe_allow_html=True)
-    st.markdown("<div class='section-title' style='margin-bottom:0.6rem;'>Photoaging assessment</div>", unsafe_allow_html=True)
+    st.markdown("<div class='section-title' style='margin-bottom:0.7rem;'>Photoaging assessment</div>", unsafe_allow_html=True)
     st.markdown(
         f"""
-        <div class='result-banner {banner_class(result['risk_label'])}' style='max-width: 920px; margin: 0 auto 0.8rem auto; text-align:left;'>
-            <div class='result-title' style='font-size:1.45rem;'>{result['risk_label']} Photoaging Risk</div>
+        <div class='result-banner {banner_class(result['risk_label'])}' style='max-width: 920px; margin: 0 auto; text-align:left;'>
+            <div class='result-title' style='font-size:1.5rem;'>{result['risk_label']} Photoaging Risk</div>
             <div class='result-copy'>{result['risk_text']}</div>
             <div class='pill-row'>
                 <span class='pill'>Visible signs: {result['visible_label']}</span>
@@ -1085,17 +1099,20 @@ def render_results():
     )
     st.markdown("</div>", unsafe_allow_html=True)
 
+    spacer(18)
+
     st.markdown("<div class='solid-card fade-in' style='padding: 1.3rem 1.4rem;'>", unsafe_allow_html=True)
-    st.markdown("<div class='section-title' style='font-size:1.35rem; margin-bottom:0.55rem;'>What you can do right now</div>", unsafe_allow_html=True)
+    st.markdown("<div class='section-title' style='font-size:1.3rem; margin-bottom:0.45rem;'>What you can do right now</div>", unsafe_allow_html=True)
     st.markdown(build_html_list(result["immediate_actions"][:2]), unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
-    st.markdown("<div class='section-title' style='font-size:1.28rem; margin: 1.2rem 0 0.8rem 0;'>Your skin profile</div>", unsafe_allow_html=True)
+
+    spacer(20)
+    st.markdown("<div class='section-title' style='font-size:1.28rem; margin-bottom:0.85rem;'>Your skin profile</div>", unsafe_allow_html=True)
     overall_short = {
         "Low": "Lower overall risk profile",
         "Moderate": "Moderate overall risk profile",
         "High": "Higher overall risk profile",
     }[result["risk_label"]]
-    
 
     m1, m2, m3 = st.columns(3, gap="medium")
     with m1:
@@ -1131,39 +1148,51 @@ def render_results():
             """,
             unsafe_allow_html=True,
         )
-          
+
+    spacer(24)
 
     left, right = st.columns([1, 1], gap="large")
 
     with left:
         st.markdown("<div class='solid-card'>", unsafe_allow_html=True)
-        st.markdown("<div class='section-title' style='font-size:1.35rem;'>What this means</div>", unsafe_allow_html=True)
+        st.markdown("<div class='section-title' style='font-size:1.3rem;'>What this means</div>", unsafe_allow_html=True)
         st.markdown(
-            f"<div class='section-note' style='margin-bottom:0;'>Your results suggest that your skin has experienced {result['exposure_label'].lower()}. Most visible aging signs appear {result['visible_label'].lower()}, which is consistent with your current overall risk profile.</div>",
+            f"<div class='section-note' style='margin-bottom:0;'>Your results suggest relatively {result['exposure_label'].lower()} and {result['visible_label'].lower()}. Overall, this is consistent with your current risk profile.</div>",
             unsafe_allow_html=True,
         )
         st.markdown("</div>", unsafe_allow_html=True)
 
-        st.markdown("<div class='solid-card'>", unsafe_allow_html=True)
-        st.markdown("<div class='section-title' style='font-size:1.35rem;'>Suggested routine</div>", unsafe_allow_html=True)
-        st.markdown(build_html_list(result["routine"][:3]), unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
+        spacer(16)
 
-    with right:
         st.markdown("<div class='solid-card'>", unsafe_allow_html=True)
-        st.markdown("<div class='section-title' style='font-size:1.35rem;'>Key insights</div>", unsafe_allow_html=True)
+        st.markdown("<div class='section-title' style='font-size:1.3rem;'>Suggested routine</div>", unsafe_allow_html=True)
         st.markdown(
             build_html_list([
-                "Long term sun exposure is the main driver of visible photoaging.",
-                "Early protection can reduce future visible skin damage.",
-                "Consistent protective habits are more effective than occasional intensive care.",
+                "Use a gentle cleanser morning and evening.",
+                "Apply broad spectrum SPF 30 or higher daily.",
+                "Use a moisturizer to support barrier health.",
             ]),
             unsafe_allow_html=True,
         )
         st.markdown("</div>", unsafe_allow_html=True)
 
+    with right:
         st.markdown("<div class='solid-card'>", unsafe_allow_html=True)
-        st.markdown("<div class='section-title' style='font-size:1.35rem;'>Environmental exposure</div>", unsafe_allow_html=True)
+        st.markdown("<div class='section-title' style='font-size:1.3rem;'>Key insights</div>", unsafe_allow_html=True)
+        st.markdown(
+            build_html_list([
+                "Long term sun exposure is the main driver of visible photoaging.",
+                "Early protection can reduce future skin damage.",
+                "Consistent protective habits matter most.",
+            ]),
+            unsafe_allow_html=True,
+        )
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        spacer(16)
+
+        st.markdown("<div class='solid-card'>", unsafe_allow_html=True)
+        st.markdown("<div class='section-title' style='font-size:1.3rem;'>Environmental exposure</div>", unsafe_allow_html=True)
         if result["pm25_value"] is not None:
             pollution_text = (
                 "Based on your location, environmental exposure levels appear relatively low and are unlikely to significantly increase skin stress at this time."
@@ -1177,13 +1206,18 @@ def render_results():
                 unsafe_allow_html=True,
             )
         else:
-            st.markdown("<div class='section-note' style='margin-bottom:0;'>Environmental exposure data was not available for the selected city, so a default estimate was used.</div>", unsafe_allow_html=True)
+            st.markdown(
+                "<div class='section-note' style='margin-bottom:0;'>Environmental exposure data was not available for the selected city, so a default estimate was used.</div>",
+                unsafe_allow_html=True,
+            )
         st.markdown("</div>", unsafe_allow_html=True)
 
-    st.markdown("<div style='height:0.6rem;'></div>", unsafe_allow_html=True)
-    if st.button("Start New Analysis"):
-        reset_analysis()
-        st.rerun()
+    spacer(26)
+    btn_l, btn_c, btn_r = st.columns([1, 1.15, 1])
+    with btn_c:
+        if st.button("Start New Analysis"):
+            reset_analysis()
+            st.rerun()
 
     st.markdown(
         "<div class='disclaimer'>This tool is intended for educational and research purposes only. It does not provide a medical diagnosis or replace professional dermatological advice.</div>",
