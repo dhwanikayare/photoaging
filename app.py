@@ -948,7 +948,6 @@ def render_landing():
             )
 
   spacer(20)
-
 st.markdown("<div style='text-align:center;'>", unsafe_allow_html=True)
 analyze_cta = st.button("Analyze My Skin")
 st.markdown("</div>", unsafe_allow_html=True)
