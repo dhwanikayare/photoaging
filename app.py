@@ -214,6 +214,10 @@ st.markdown(
         padding: 1.1rem;
         box-shadow: var(--shadow-sm);
         height: 100%;
+        min-height: 210px;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
     }
 
     .fact-title {
@@ -221,12 +225,14 @@ st.markdown(
         font-weight: 750;
         color: #1f2937;
         margin-bottom: 0.35rem;
+        min-height: 52px;
     }
 
     .fact-copy {
         font-size: 0.94rem;
         color: #596272;
         line-height: 1.65;
+        flex-grow: 1;
     }
 
     .progress-wrap {
@@ -382,7 +388,11 @@ st.markdown(
         border-radius: 22px;
         padding: 1rem 1.1rem;
         box-shadow: var(--shadow-sm);
-        min-height: 132px;
+        min-height: 170px;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
     }
 
     .metric-label {
@@ -820,15 +830,15 @@ def render_landing():
     facts = [
         (
             "Photoaging reflects cumulative UV damage",
-            "Chronic ultraviolet exposure causes structural skin changes including collagen degradation, elastin breakdown, and pigmentation irregularities that become visible over time.",
+            "Chronic ultraviolet exposure causes collagen breakdown, elastin damage, and pigmentation changes that become visible over time.",
         ),
         (
             "Visible skin changes are biologically meaningful",
-            "Visible skin changes such as wrinkles, uneven tone, and texture variation reflect underlying biological damage from long term environmental exposure.",
+            "Wrinkles, uneven tone, and texture variation often reflect underlying skin damage from long term environmental exposure.",
         ),
         (
             "Early detection supports prevention",
-            "Photoaging can act as a visible indicator of cumulative UV exposure, supporting early awareness and preventative skin health behaviour.",
+            "Visible photoaging can help raise early awareness of cumulative UV exposure and encourage protective skin habits.",
         ),
     ]
 
@@ -927,7 +937,7 @@ def render_lifestyle_step():
     st.markdown("<div class='section-kicker'>Step 2</div>", unsafe_allow_html=True)
     st.markdown("<div class='section-title'>Lifestyle profile</div>", unsafe_allow_html=True)
     st.markdown(
-        "<div class='section-note'>These questions help estimate your long term skin exposure patterns. Answer them based on your usual routine rather than your best or worst days.</div>",
+        "<div class='section-note'>These questions help estimate your long term skin exposure patterns. Answer them based on your usual routine.</div>",
         unsafe_allow_html=True,
     )
 
@@ -939,11 +949,13 @@ def render_lifestyle_step():
         c1, c2 = st.columns(2, gap="large")
 
         with c1:
-            hours_choice = st.select_slider(
-                "How much time do you usually spend outdoors during daylight on a typical day?",
-                options=["Less than 1 hour", "1 to 2 hours", "2 to 4 hours", "4 to 6 hours", "More than 6 hours"],
-                value=None,
-                help="Include commuting, errands, exercise, outdoor work, and other regular daylight exposure.",
+            hours = st.slider(
+                "How many hours do you usually spend outdoors during daylight each day?",
+                min_value=0.0,
+                max_value=8.0,
+                value=0.0,
+                step=0.5,
+                help="Include commuting, exercise, outdoor work, and other regular daylight exposure.",
             )
             city = st.selectbox(
                 "Which city do you live in most of the time?",
@@ -953,17 +965,19 @@ def render_lifestyle_step():
             )
 
         with c2:
-            smoking_choice = st.selectbox(
-                "Do you currently smoke cigarettes?",
-                options=["Select an option", "No", "Yes, occasionally", "Yes, daily"],
-                index=0,
-                help="Smoking can contribute to long term skin stress and visible aging changes.",
+            cigs = st.number_input(
+                "How many cigarettes do you smoke per day?",
+                min_value=0,
+                max_value=40,
+                value=0,
+                step=1,
+                help="Enter 0 if you do not smoke.",
             )
             sunscreen = st.selectbox(
-                "How often do you apply sunscreen during your usual routine?",
-                ["Select an option", "Daily", "Sometimes", "Rarely or never"],
+                "Do you apply sunscreen daily?",
+                ["Select an option", "yes", "no"],
                 index=0,
-                help="Regular sunscreen use is one of the most protective habits against photoaging.",
+                help="Daily sunscreen use is one of the most protective habits against photoaging.",
             )
 
         st.markdown("</div>", unsafe_allow_html=True)
@@ -980,43 +994,23 @@ def render_lifestyle_step():
 
     if analyze_clicked:
         validation_errors = []
-        if hours_choice is None:
-            validation_errors.append("Please choose your typical daylight exposure.")
+        if hours == 0.0:
+            validation_errors.append("Please adjust your typical daylight exposure.")
         if city == "Select your city":
             validation_errors.append("Please select the city you live in most of the time.")
-        if smoking_choice == "Select an option":
-            validation_errors.append("Please select your smoking status.")
         if sunscreen == "Select an option":
-            validation_errors.append("Please select your sunscreen routine.")
+            validation_errors.append("Please select whether you apply sunscreen daily.")
 
         if validation_errors:
             for msg in validation_errors:
                 st.warning(msg)
         else:
-            hours_map = {
-                "Less than 1 hour": 0.5,
-                "1 to 2 hours": 1.5,
-                "2 to 4 hours": 3.0,
-                "4 to 6 hours": 5.0,
-                "More than 6 hours": 7.0,
-            }
-            smoking_map = {
-                "No": 0,
-                "Yes, occasionally": 3,
-                "Yes, daily": 10,
-            }
-            sunscreen_map = {
-                "Daily": "yes",
-                "Sometimes": "no",
-                "Rarely or never": "no",
-            }
-
             st.session_state.app_screen = "processing"
             st.session_state.analysis_inputs = {
-                "hours": hours_map[hours_choice],
-                "cigs": smoking_map[smoking_choice],
+                "hours": hours,
+                "cigs": cigs,
                 "city": city,
-                "sunscreen": sunscreen_map[sunscreen],
+                "sunscreen": sunscreen,
             }
             st.rerun()
 
@@ -1072,7 +1066,6 @@ def render_results():
     progress_indicator(active_step=3)
     result = st.session_state.result_payload
 
-    # Hero result
     st.markdown("<div class='glass-card fade-in' style='padding: 2rem 2rem 1.8rem 2rem; text-align:center;'>", unsafe_allow_html=True)
     st.markdown("<div class='section-kicker'>Your result</div>", unsafe_allow_html=True)
     st.markdown("<div class='section-title' style='margin-bottom:0.6rem;'>Photoaging assessment</div>", unsafe_allow_html=True)
@@ -1092,14 +1085,18 @@ def render_results():
     )
     st.markdown("</div>", unsafe_allow_html=True)
 
-    # Immediate actions
     st.markdown("<div class='solid-card fade-in' style='padding: 1.3rem 1.4rem;'>", unsafe_allow_html=True)
     st.markdown("<div class='section-title' style='font-size:1.35rem; margin-bottom:0.55rem;'>What you can do right now</div>", unsafe_allow_html=True)
     st.markdown(build_html_list(result["immediate_actions"][:2]), unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
-    # Quick snapshot
     st.markdown("<div class='section-title' style='font-size:1.28rem; margin: 1.2rem 0 0.8rem 0;'>Your skin profile</div>", unsafe_allow_html=True)
+    overall_short = {
+        "Low": "Lower overall risk profile",
+        "Moderate": "Moderate overall risk profile",
+        "High": "Higher overall risk profile",
+    }[result["risk_label"]]
+
     m1, m2, m3 = st.columns(3, gap="medium")
     with m1:
         st.markdown(
@@ -1129,27 +1126,26 @@ def render_results():
             <div class='metric-card'>
                 <div class='metric-label'>Overall risk</div>
                 <div class='metric-value'>{result['risk_label']}</div>
-                <div class='metric-sub'>{result['result_summary']}</div>
+                <div class='metric-sub'>{overall_short}</div>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
-    # Interpretation and deeper sections
     left, right = st.columns([1, 1], gap="large")
 
     with left:
         st.markdown("<div class='solid-card'>", unsafe_allow_html=True)
         st.markdown("<div class='section-title' style='font-size:1.35rem;'>What this means</div>", unsafe_allow_html=True)
         st.markdown(
-            f"<div class='section-note' style='margin-bottom:0;'>Your results suggest that your skin has experienced {result['exposure_label'].lower()}. Most visible aging signs appear {result['visible_label'].lower()}, which is generally consistent with lower cumulative environmental stress over time.</div>",
+            f"<div class='section-note' style='margin-bottom:0;'>Your results suggest that your skin has experienced {result['exposure_label'].lower()}. Most visible aging signs appear {result['visible_label'].lower()}, which is consistent with your current overall risk profile.</div>",
             unsafe_allow_html=True,
         )
         st.markdown("</div>", unsafe_allow_html=True)
 
         st.markdown("<div class='solid-card'>", unsafe_allow_html=True)
         st.markdown("<div class='section-title' style='font-size:1.35rem;'>Suggested routine</div>", unsafe_allow_html=True)
-        st.markdown(build_html_list(result["routine"][:4]), unsafe_allow_html=True)
+        st.markdown(build_html_list(result["routine"][:3]), unsafe_allow_html=True)
         st.markdown("</div>", unsafe_allow_html=True)
 
     with right:
@@ -1159,7 +1155,7 @@ def render_results():
             build_html_list([
                 "Long term sun exposure is the main driver of visible photoaging.",
                 "Early protection can reduce future visible skin damage.",
-                "Consistent protective habits matter more than occasional intensive care.",
+                "Consistent protective habits are more effective than occasional intensive care.",
             ]),
             unsafe_allow_html=True,
         )
