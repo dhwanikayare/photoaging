@@ -913,7 +913,7 @@ def render_landing():
 
     st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
     st.markdown("<div class='section-kicker'>About this tool</div>", unsafe_allow_html=True)
-    st.markdown("<div class='section-title'>Built from dermatology and AI research</div>", unsafe_allow_html=True)
+    st.markdown("<div class='section-title'>An AI supported tool for photoaging insight</div>", unsafe_allow_html=True)
     st.markdown(
         "<div class='section-note'>This system combines deep learning based facial image analysis with environmental and lifestyle factors such as ultraviolet exposure, pollution, smoking, and sun protection habits to estimate photoaging risk. It is designed to make research-backed skin assessment more accessible without requiring specialized clinical equipment.</div>",
         unsafe_allow_html=True,
