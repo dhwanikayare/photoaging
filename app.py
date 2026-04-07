@@ -207,19 +207,14 @@ st.markdown(
         margin-bottom: 0.85rem;
     }
 
-   .fact-card {
+    .fact-card {
         background: rgba(255,255,255,0.80);
         border: 1px solid rgba(31,41,55,0.06);
         border-radius: 22px;
         padding: 1.1rem;
         box-shadow: var(--shadow-sm);
         height: 100%;
-        min-height: 220px;
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-start;
     }
-
 
     .fact-title {
         font-size: 1rem;
@@ -381,17 +376,13 @@ st.markdown(
         line-height: 1.7;
     }
 
-     .metric-card {
+    .metric-card {
         background: rgba(255,255,255,0.88);
         border: 1px solid rgba(31,41,55,0.06);
         border-radius: 22px;
         padding: 1rem 1.1rem;
         box-shadow: var(--shadow-sm);
-        min-height: 170px;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-start;
+        min-height: 132px;
     }
 
     .metric-label {
@@ -932,49 +923,52 @@ def render_image_step():
 def render_lifestyle_step():
     progress_indicator(active_step=2)
 
-    st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
+    st.markdown("<div class='glass-card fade-in' style='padding: 1.6rem 1.5rem;'>", unsafe_allow_html=True)
     st.markdown("<div class='section-kicker'>Step 2</div>", unsafe_allow_html=True)
     st.markdown("<div class='section-title'>Lifestyle profile</div>", unsafe_allow_html=True)
     st.markdown(
-        "<div class='section-note'>Answer a few guided questions so the app can combine visible skin features with likely cumulative exposure patterns.</div>",
+        "<div class='section-note'>These questions help estimate your long term skin exposure patterns. Answer them based on your usual routine rather than your best or worst days.</div>",
         unsafe_allow_html=True,
     )
 
     with st.form("lifestyle_form"):
+        st.markdown("<div class='solid-card' style='padding: 1.2rem 1.2rem 0.4rem 1.2rem;'>", unsafe_allow_html=True)
+        st.markdown("<div class='section-title' style='font-size:1.15rem; margin-bottom:0.15rem;'>Tell us about your typical exposure</div>", unsafe_allow_html=True)
+        st.markdown("<div class='section-note' style='margin-bottom:1rem;'>Your answers help combine visible facial features with daily environmental and lifestyle factors.</div>", unsafe_allow_html=True)
+
         c1, c2 = st.columns(2, gap="large")
 
         with c1:
-            hours = st.slider(
-                "How many hours do you usually spend outdoors during daylight each day?",
-                min_value=0.0,
-                max_value=8.0,
-                value=2.0,
-                step=0.5,
-                help="Include commuting, exercise, outdoor work, and routine daylight exposure.",
+            hours_choice = st.select_slider(
+                "How much time do you usually spend outdoors during daylight on a typical day?",
+                options=["Less than 1 hour", "1 to 2 hours", "2 to 4 hours", "4 to 6 hours", "More than 6 hours"],
+                value=None,
+                help="Include commuting, errands, exercise, outdoor work, and other regular daylight exposure.",
             )
             city = st.selectbox(
                 "Which city do you live in most of the time?",
-                options=city_options,
-                index=city_options.index("London") if "London" in city_options else 0,
-                help="This is used to estimate PM2.5 exposure from the available city dataset.",
+                options=["Select your city"] + city_options,
+                index=0,
+                help="This helps estimate environmental exposure using city level PM2.5 data.",
             )
 
         with c2:
-            cigs = st.number_input(
-                "How many cigarettes do you smoke per day?",
-                min_value=0,
-                max_value=40,
-                value=0,
-                step=1,
-                help="Even lower levels of repeated smoking exposure may still contribute to long term skin stress.",
+            smoking_choice = st.selectbox(
+                "Do you currently smoke cigarettes?",
+                options=["Select an option", "No", "Yes, occasionally", "Yes, daily"],
+                index=0,
+                help="Smoking can contribute to long term skin stress and visible aging changes.",
             )
             sunscreen = st.selectbox(
-                "Do you apply sunscreen daily?",
-                ["yes", "no"],
-                help="Daily broad spectrum sunscreen use is one of the most protective habits against visible photoaging.",
+                "How often do you apply sunscreen during your usual routine?",
+                ["Select an option", "Daily", "Sometimes", "Rarely or never"],
+                index=0,
+                help="Regular sunscreen use is one of the most protective habits against photoaging.",
             )
 
-        n1, n2 = st.columns([0.25, 0.75], gap="medium")
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        n1, n2 = st.columns([0.28, 0.72], gap="medium")
         with n1:
             back_clicked = st.form_submit_button("Back")
         with n2:
@@ -985,14 +979,46 @@ def render_lifestyle_step():
         st.rerun()
 
     if analyze_clicked:
-        st.session_state.app_screen = "processing"
-        st.session_state.analysis_inputs = {
-            "hours": hours,
-            "cigs": cigs,
-            "city": city,
-            "sunscreen": sunscreen,
-        }
-        st.rerun()
+        validation_errors = []
+        if hours_choice is None:
+            validation_errors.append("Please choose your typical daylight exposure.")
+        if city == "Select your city":
+            validation_errors.append("Please select the city you live in most of the time.")
+        if smoking_choice == "Select an option":
+            validation_errors.append("Please select your smoking status.")
+        if sunscreen == "Select an option":
+            validation_errors.append("Please select your sunscreen routine.")
+
+        if validation_errors:
+            for msg in validation_errors:
+                st.warning(msg)
+        else:
+            hours_map = {
+                "Less than 1 hour": 0.5,
+                "1 to 2 hours": 1.5,
+                "2 to 4 hours": 3.0,
+                "4 to 6 hours": 5.0,
+                "More than 6 hours": 7.0,
+            }
+            smoking_map = {
+                "No": 0,
+                "Yes, occasionally": 3,
+                "Yes, daily": 10,
+            }
+            sunscreen_map = {
+                "Daily": "yes",
+                "Sometimes": "no",
+                "Rarely or never": "no",
+            }
+
+            st.session_state.app_screen = "processing"
+            st.session_state.analysis_inputs = {
+                "hours": hours_map[hours_choice],
+                "cigs": smoking_map[smoking_choice],
+                "city": city,
+                "sunscreen": sunscreen_map[sunscreen],
+            }
+            st.rerun()
 
     st.markdown("</div>", unsafe_allow_html=True)
 
