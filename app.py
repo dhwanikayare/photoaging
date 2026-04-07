@@ -35,6 +35,53 @@ for key, value in DEFAULTS.items():
 # ============================================================
 # STYLING
 # ============================================================
+
+# Added enhanced spacing + animation polish
+st.markdown(
+    """
+    <style>
+
+    /* Smooth fade-in animation */
+    .fade-in {
+        animation: fadeIn 0.8s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Stronger hero spacing */
+    .hero-shell {
+        padding: 3.5rem 3rem !important;
+        margin-bottom: 2rem !important;
+    }
+
+    /* Slightly stronger card contrast */
+    .glass-card {
+        background: rgba(255,255,255,0.88) !important;
+    }
+
+    .solid-card {
+        background: rgba(255,255,255,0.96) !important;
+    }
+
+    /* Button interaction polish */
+    .stButton > button {
+        transition: all 0.2s ease;
+    }
+
+    .stButton > button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 14px 26px rgba(0,0,0,0.12);
+    }
+
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+# ============================================================
 st.markdown(
     """
     <style>
@@ -746,6 +793,7 @@ def reset_analysis():
 # LANDING SCREEN
 # ============================================================
 def render_landing():
+    st.markdown("<div class='fade-in'>", unsafe_allow_html=True)
     st.markdown(
         """
         <div class='hero-shell'>
@@ -798,6 +846,8 @@ def render_landing():
 
     st.markdown("<div style='height:0.7rem;'></div>", unsafe_allow_html=True)
     if st.button("Analyze My Skin"):
+        with st.spinner("Preparing analysis..."):
+            time.sleep(0.6)
         st.session_state.app_screen = "image_step"
         st.rerun()
 
@@ -984,16 +1034,21 @@ def render_processing_step():
 # RESULTS STEP
 # ============================================================
 def render_results():
+    st.markdown("<div class='fade-in'>", unsafe_allow_html=True)
     progress_indicator(active_step=3)
     result = st.session_state.result_payload
 
+    # --- REVEAL STAGE 1: TITLE ---
     st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
     st.markdown("<div class='section-kicker'>Your result</div>", unsafe_allow_html=True)
     st.markdown("<div class='section-title'>Photoaging assessment</div>", unsafe_allow_html=True)
+    time.sleep(0.4)
 
+    # --- REVEAL STAGE 2: RISK ---
+    time.sleep(0.4)
     st.markdown(
         f"""
-        <div class='result-banner {banner_class(result['risk_label'])}'>
+        <div class='result-banner {banner_class(result['risk_label'])} fade-in'>
             <div class='result-title'>{result['risk_label']} Photoaging Risk</div>
             <div class='result-copy'>{result['risk_text']}</div>
             <div class='pill-row'>
@@ -1008,11 +1063,15 @@ def render_results():
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-    st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
+    # --- REVEAL STAGE 3: IMMEDIATE ACTIONS ---
+    time.sleep(0.5)
+    st.markdown("<div class='glass-card fade-in'>", unsafe_allow_html=True)
     st.markdown("<div class='section-title'>What you can improve immediately</div>", unsafe_allow_html=True)
     st.markdown(build_html_list(result["immediate_actions"]), unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
+    # --- REVEAL STAGE 4: METRICS ---
+    time.sleep(0.5)
     m1, m2, m3 = st.columns(3, gap="medium")
     with m1:
         st.markdown(
@@ -1048,6 +1107,8 @@ def render_results():
             unsafe_allow_html=True,
         )
 
+    # --- REVEAL STAGE 5: DEEP INSIGHTS ---
+    time.sleep(0.5)
     left, right = st.columns([1.05, 0.95], gap="large")
 
     with left:
