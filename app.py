@@ -935,7 +935,7 @@ def render_landing():
         ),
     ]
 
-    for col, (title, copy) in zip([c1, c2, c3], facts):
+        for col, (title, copy) in zip([c1, c2, c3], facts):
         with col:
             st.markdown(
                 f"""
@@ -947,17 +947,17 @@ def render_landing():
                 unsafe_allow_html=True,
             )
 
-  spacer(20)
+    spacer(20)
 
-st.markdown("<div style='text-align:center;'>", unsafe_allow_html=True)
-analyze_cta = st.button("Analyze My Skin")
-st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:center;'>", unsafe_allow_html=True)
+    analyze_cta = st.button("Analyze My Skin")
+    st.markdown("</div>", unsafe_allow_html=True)
 
-if analyze_cta:
-    with st.spinner("Preparing analysis..."):
-        time.sleep(0.6)
-    st.session_state.app_screen = "image_step"
-    st.rerun()
+    if analyze_cta:
+        with st.spinner("Preparing analysis..."):
+            time.sleep(0.6)
+        st.session_state.app_screen = "image_step"
+        st.rerun()
 
 # ============================================================
 # IMAGE STEP
