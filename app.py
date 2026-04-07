@@ -10,7 +10,7 @@ import time
 # PAGE CONFIG
 # ============================================================
 st.set_page_config(
-    page_title="Photoaging Check",
+    page_title="Photoaging Insight AI",
     page_icon="🌿",
     layout="wide",
     initial_sidebar_state="collapsed",
@@ -749,10 +749,10 @@ def render_landing():
     st.markdown(
         """
         <div class='hero-shell'>
-            <div class='hero-badge'>Research informed skin exposure insight</div>
-            <div class='hero-title'>Photoaging Check</div>
+            <div class='hero-badge'>AI-driven skin exposure analysis</div>
+            <div class='hero-title'>Photoaging Insight AI</div>
             <div class='hero-copy'>
-                Explore how visible skin features and everyday exposure patterns may relate to photoaging. This tool combines facial image analysis with lifestyle and environmental indicators to deliver a simple, guided risk estimate.
+                Understand your skin exposure and photoaging risk using AI.
             </div>
         </div>
         """,
@@ -761,9 +761,9 @@ def render_landing():
 
     st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
     st.markdown("<div class='section-kicker'>About this tool</div>", unsafe_allow_html=True)
-    st.markdown("<div class='section-title'>Built to translate research into a clearer user experience</div>", unsafe_allow_html=True)
+    st.markdown("<div class='section-title'>Built from dermatology and AI research</div>", unsafe_allow_html=True)
     st.markdown(
-        "<div class='section-note'>This experience is designed to bring together image based skin assessment, lifestyle factors, and pollution related exposure into one accessible photoaging screening flow. It is intended for educational and research use and helps users understand how everyday habits may influence visible skin aging over time.</div>",
+        "<div class='section-note'>This system combines deep learning based facial image analysis with environmental and lifestyle factors such as ultraviolet exposure, pollution, smoking, and sun protection habits to estimate photoaging risk. It is designed to make research-backed skin assessment more accessible without requiring specialized clinical equipment.</div>",
         unsafe_allow_html=True,
     )
     st.markdown("</div>", unsafe_allow_html=True)
@@ -771,16 +771,16 @@ def render_landing():
     c1, c2, c3 = st.columns(3, gap="large")
     facts = [
         (
-            "Ultraviolet exposure matters most",
-            "Chronic UV exposure is widely recognized as the primary external driver of visible photoaging, including wrinkles, uneven tone, and loss of elasticity.",
+            "Photoaging reflects cumulative UV damage",
+            "Chronic ultraviolet exposure causes structural skin changes including collagen degradation, elastin breakdown, and pigmentation irregularities that become visible over time.",
         ),
         (
-            "Environment adds cumulative stress",
-            "Pollution and smoking may contribute to long term oxidative stress that can affect skin appearance and barrier health over time.",
+            "Visible skin changes are biologically meaningful",
+            "Visible skin changes such as wrinkles, uneven tone, and texture variation reflect underlying biological damage from long term environmental exposure.",
         ),
         (
-            "Daily habits shape long term outcomes",
-            "Protective behaviors such as sunscreen use and limiting prolonged direct sun exposure may reduce cumulative visible skin aging risk.",
+            "Early detection supports prevention",
+            "Photoaging can act as a visible indicator of cumulative UV exposure, supporting early awareness and preventative skin health behaviour.",
         ),
     ]
 
