@@ -5,7 +5,7 @@ import pandas as pd
 from PIL import Image
 import difflib
 import time
-import mediapipe as mp
+import cv2
 
 # ============================================================
 # PAGE CONFIG
@@ -285,7 +285,7 @@ st.markdown(
         overflow: hidden;
         border: 1px solid rgba(31,41,55,0.07);
         box-shadow: var(--shadow-sm);
-        margin-top: 0.2rem;
+        margin-top: 0.4rem;
         background: #0f172a;
     }
 
@@ -293,32 +293,39 @@ st.markdown(
         position: absolute;
         inset: 0;
         pointer-events: none;
-        background: radial-gradient(circle at center, rgba(34,211,238,0.08), rgba(15,23,42,0.10));
-        z-index: 2;
+        background:
+            linear-gradient(to bottom, rgba(15,23,42,0.00), rgba(15,23,42,0.10)),
+            radial-gradient(circle at center, rgba(34,211,238,0.10), rgba(15,23,42,0.06));
+        z-index: 1;
     }
 
     .scanner-overlay {
         position: absolute;
+        inset: 0;
         pointer-events: none;
-        background: linear-gradient(
-            to bottom,
-            rgba(255,255,255,0.00) 0%,
-            rgba(34,211,238,0.15) 42%,
-            rgba(34,211,238,0.50) 50%,
-            rgba(34,211,238,0.15) 58%,
-            rgba(255,255,255,0.00) 100%
-        );
-        animation: scanline 1.6s linear infinite;
-        z-index: 5;
-        border-radius: 22px;
+        background:
+            linear-gradient(
+                to bottom,
+                rgba(255,255,255,0.00) 0%,
+                rgba(34,211,238,0.00) 35%,
+                rgba(34,211,238,0.28) 50%,
+                rgba(34,211,238,0.00) 65%,
+                rgba(255,255,255,0.00) 100%
+            );
+        animation: scanline 2s linear infinite;
+        z-index: 3;
     }
 
     .scanner-face-box {
         position: absolute;
+        top: 18%;
+        left: 28%;
+        width: 44%;
+        height: 52%;
         border: 2px solid rgba(34,211,238,0.85);
-        border-radius: 22px;
-        box-shadow: 0 0 0 1px rgba(255,255,255,0.10), 0 0 24px rgba(34,211,238,0.35);
-        animation: scannerPulse 1.8s ease-in-out infinite;
+        border-radius: 24px;
+        box-shadow: 0 0 0 1px rgba(255,255,255,0.08), 0 0 20px rgba(34,211,238,0.22);
+        animation: scannerPulse 2s ease-in-out infinite;
         z-index: 4;
     }
 
@@ -328,29 +335,37 @@ st.markdown(
         height: 34px;
         border-color: rgba(34,211,238,0.95);
         border-style: solid;
-        animation: cornerPulse 1.4s ease-in-out infinite;
-        z-index: 6;
-        box-shadow: 0 0 14px rgba(34,211,238,0.30);
+        animation: cornerPulse 1.5s ease-in-out infinite;
+        z-index: 5;
+        box-shadow: 0 0 12px rgba(34,211,238,0.24);
     }
 
     .scanner-corner.tl {
+        top: calc(18% - 6px);
+        left: calc(28% - 6px);
         border-width: 3px 0 0 3px;
-        border-top-left-radius: 12px;
+        border-top-left-radius: 10px;
     }
 
     .scanner-corner.tr {
+        top: calc(18% - 6px);
+        left: calc(72% - 28px);
         border-width: 3px 3px 0 0;
-        border-top-right-radius: 12px;
+        border-top-right-radius: 10px;
     }
 
     .scanner-corner.bl {
+        top: calc(70% - 28px);
+        left: calc(28% - 6px);
         border-width: 0 0 3px 3px;
-        border-bottom-left-radius: 12px;
+        border-bottom-left-radius: 10px;
     }
 
     .scanner-corner.br {
+        top: calc(70% - 28px);
+        left: calc(72% - 28px);
         border-width: 0 3px 3px 0;
-        border-bottom-right-radius: 12px;
+        border-bottom-right-radius: 10px;
     }
 
     .scanner-status {
@@ -358,21 +373,21 @@ st.markdown(
         left: 50%;
         bottom: 18px;
         transform: translateX(-50%);
-        padding: 0.42rem 0.8rem;
+        padding: 0.42rem 0.85rem;
         border-radius: 999px;
-        background: rgba(15,23,42,0.72);
+        background: rgba(15,23,42,0.78);
         color: #d5f9ff;
         font-size: 0.82rem;
         font-weight: 700;
         letter-spacing: 0.03em;
-        z-index: 7;
-        border: 1px solid rgba(34,211,238,0.26);
+        z-index: 6;
+        border: 1px solid rgba(34,211,238,0.22);
         backdrop-filter: blur(6px);
     }
 
     @keyframes scanline {
-        0% { transform: translateY(-120%); }
-        100% { transform: translateY(120%); }
+        0% { transform: translateY(-100%); }
+        100% { transform: translateY(100%); }
     }
 
     @keyframes scannerPulse {
@@ -381,7 +396,7 @@ st.markdown(
     }
 
     @keyframes cornerPulse {
-        0%, 100% { opacity: 0.72; }
+        0%, 100% { opacity: 0.75; }
         50% { opacity: 1; }
     }
 
@@ -572,11 +587,6 @@ model = load_model()
 IMG_SIZE = (224, 224)
 
 # ============================================================
-# MEDIAPIPE SETUP
-# ============================================================
-mp_face_detection = mp.solutions.face_detection
-
-# ============================================================
 # LOAD AQI DATA
 # ============================================================
 @st.cache_data
@@ -759,7 +769,11 @@ def banner_class(risk_label):
 
 
 def progress_indicator(active_step: int):
-    steps = [(1, "Image"), (2, "Lifestyle"), (3, "Results")]
+    steps = [
+        (1, "Image"),
+        (2, "Lifestyle"),
+        (3, "Results"),
+    ]
     html_parts = ["<div class='progress-wrap'>"]
     for i, (num, label) in enumerate(steps):
         active_cls = "active" if num == active_step else ""
@@ -770,10 +784,6 @@ def progress_indicator(active_step: int):
             html_parts.append("<div class='progress-arrow'>→</div>")
     html_parts.append("</div>")
     st.markdown("".join(html_parts), unsafe_allow_html=True)
-
-
-def spacer(h=20):
-    st.markdown(f"<div style='height:{h}px;'></div>", unsafe_allow_html=True)
 
 
 def image_from_session():
@@ -788,66 +798,34 @@ def save_uploaded_image(file_obj, source_label: str):
         st.session_state.selected_image_source = source_label
 
 
-def detect_face_box(img_pil):
-    img_rgb = np.array(img_pil.convert("RGB"))
-    img_h, img_w = img_rgb.shape[:2]
-
-    with mp_face_detection.FaceDetection(
-        model_selection=1,
-        min_detection_confidence=0.5
-    ) as face_detection:
-        results = face_detection.process(img_rgb)
-
-    if results.detections:
-        best_box = None
-        best_area = 0
-
-        for detection in results.detections:
-            bbox = detection.location_data.relative_bounding_box
-
-            x = max(int(bbox.xmin * img_w), 0)
-            y = max(int(bbox.ymin * img_h), 0)
-            w = int(bbox.width * img_w)
-            h = int(bbox.height * img_h)
-
-            area = w * h
-            if area > best_area:
-                best_area = area
-                best_box = (x, y, w, h, img_w, img_h)
-
-        return best_box
-
-    return None
+def get_scanner_mode():
+    return st.session_state.selected_image_source if st.session_state.selected_image_source else "upload"
 
 
 def render_scanner_preview(img, status_text="Scan complete"):
-    face_box = detect_face_box(img)
+    source = get_scanner_mode()
 
     st.markdown("<div class='scanner-frame'>", unsafe_allow_html=True)
     st.image(img, use_container_width=True)
     st.markdown("<div class='scanner-tint'></div>", unsafe_allow_html=True)
 
-    if face_box is not None:
-        x, y, w, h, img_w, img_h = face_box
+    if source == "camera":
+        st.markdown("<div class='scanner-overlay'></div>", unsafe_allow_html=True)
+        st.markdown("<div class='scanner-face-box'></div>", unsafe_allow_html=True)
+        st.markdown("<div class='scanner-corner tl'></div>", unsafe_allow_html=True)
+        st.markdown("<div class='scanner-corner tr'></div>", unsafe_allow_html=True)
+        st.markdown("<div class='scanner-corner bl'></div>", unsafe_allow_html=True)
+        st.markdown("<div class='scanner-corner br'></div>", unsafe_allow_html=True)
+        st.markdown("<div class='scanner-status'>Camera scan complete</div>", unsafe_allow_html=True)
+    else:
+        st.markdown("<div class='scanner-overlay' style='opacity:0.75;'></div>", unsafe_allow_html=True)
+        st.markdown("<div class='scanner-face-box'></div>", unsafe_allow_html=True)
+        st.markdown("<div class='scanner-corner tl'></div>", unsafe_allow_html=True)
+        st.markdown("<div class='scanner-corner tr'></div>", unsafe_allow_html=True)
+        st.markdown("<div class='scanner-corner bl'></div>", unsafe_allow_html=True)
+        st.markdown("<div class='scanner-corner br'></div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='scanner-status'>{status_text}</div>", unsafe_allow_html=True)
 
-        left = (x / img_w) * 100
-        top = (y / img_h) * 100
-        width = (w / img_w) * 100
-        height = (h / img_h) * 100
-
-        st.markdown(
-            f"""
-            <div class='scanner-face-box' style='left:{left}%; top:{top}%; width:{width}%; height:{height}%;'></div>
-            <div class='scanner-overlay' style='left:{left}%; top:{top}%; width:{width}%; height:{height}%;'></div>
-            <div class='scanner-corner tl' style='left:calc({left}% - 6px); top:calc({top}% - 6px);'></div>
-            <div class='scanner-corner tr' style='left:calc({left + width}% - 28px); top:calc({top}% - 6px);'></div>
-            <div class='scanner-corner bl' style='left:calc({left}% - 6px); top:calc({top + height}% - 28px);'></div>
-            <div class='scanner-corner br' style='left:calc({left + width}% - 28px); top:calc({top + height}% - 28px);'></div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-    st.markdown(f"<div class='scanner-status'>{status_text}</div>", unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
 
@@ -858,6 +836,7 @@ def predict_visible_photoaging(img_pil):
     x = tf.keras.applications.mobilenet_v2.preprocess_input(img_batch)
     pred = model.predict(x, verbose=0)
     return float(pred[0, 0]), img
+
 
 def run_analysis(hours, cigs, city, sunscreen):
     img_pil = image_from_session()
@@ -905,6 +884,10 @@ def reset_analysis():
     st.session_state.selected_image_source = None
     st.session_state.analysis_complete = False
     st.session_state.result_payload = None
+
+
+def spacer(h=20):
+    st.markdown(f"<div style='height:{h}px;'></div>", unsafe_allow_html=True)
 
 
 # ============================================================
@@ -1024,7 +1007,7 @@ def render_image_step():
     img = image_from_session()
     if img is not None:
         st.markdown("<div class='ready-chip'>Face image ready for analysis</div>", unsafe_allow_html=True)
-        render_scanner_preview(img, "Scan complete")
+        render_scanner_preview(img, "Folder scan complete")
 
     spacer(16)
     nav_l, nav_c, nav_r = st.columns([1, 1.1, 1], gap="medium")
@@ -1132,6 +1115,8 @@ def render_lifestyle_step():
             }
             st.rerun()
 
+    st.markdown("</div>", unsafe_allow_html=True)
+
 
 # ============================================================
 # PROCESSING STEP
@@ -1210,7 +1195,6 @@ def render_results():
 
     spacer(20)
     st.markdown("<div class='section-title' style='font-size:1.28rem; margin-bottom:0.85rem;'>Your skin profile</div>", unsafe_allow_html=True)
-
     overall_short = {
         "Low": "Lower overall risk profile",
         "Moderate": "Moderate overall risk profile",
