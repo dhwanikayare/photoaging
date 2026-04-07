@@ -5,7 +5,7 @@ import pandas as pd
 from PIL import Image
 import difflib
 import time
-import cv2
+import mediapipe as mp
 
 # ============================================================
 # PAGE CONFIG
@@ -32,56 +32,8 @@ for key, value in DEFAULTS.items():
     if key not in st.session_state:
         st.session_state[key] = value
 
-
 # ============================================================
 # STYLING
-# ============================================================
-
-# Added enhanced spacing + animation polish
-st.markdown(
-    """
-    <style>
-
-    /* Smooth fade-in animation */
-    .fade-in {
-        animation: fadeIn 0.8s ease-in-out;
-    }
-
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* Stronger hero spacing */
-    .hero-shell {
-        padding: 3.5rem 3rem !important;
-        margin-bottom: 2rem !important;
-    }
-
-    /* Slightly stronger card contrast */
-    .glass-card {
-        background: rgba(255,255,255,0.88) !important;
-    }
-
-    .solid-card {
-        background: rgba(255,255,255,0.96) !important;
-    }
-
-    /* Button interaction polish */
-    .stButton > button {
-        transition: all 0.2s ease;
-    }
-
-    .stButton > button:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 14px 26px rgba(0,0,0,0.12);
-    }
-
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
 # ============================================================
 st.markdown(
     """
@@ -98,7 +50,6 @@ st.markdown(
         --shadow-sm: 0 6px 18px rgba(64, 40, 18, 0.05);
         --accent: #d97757;
         --accent-2: #8b5cf6;
-        --accent-3: #f2c6a2;
         --success-bg: #eef9f1;
         --success-border: #4aa366;
         --warn-bg: #fff8e8;
@@ -117,8 +68,17 @@ st.markdown(
 
     .block-container {
         max-width: 1180px;
-        padding-top: 2.0rem;
+        padding-top: 2rem;
         padding-bottom: 3rem;
+    }
+
+    .fade-in {
+        animation: fadeIn 0.8s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
     }
 
     h1, h2, h3, h4 {
@@ -132,9 +92,9 @@ st.markdown(
         background: linear-gradient(135deg, rgba(248, 234, 223, 0.92) 0%, rgba(238, 232, 251, 0.90) 100%);
         border: 1px solid rgba(255,255,255,0.58);
         border-radius: 32px;
-        padding: 2.8rem 2.4rem;
+        padding: 3.2rem 2.8rem;
         box-shadow: var(--shadow-lg);
-        margin-bottom: 1.2rem;
+        margin-bottom: 2rem;
     }
 
     .hero-badge {
@@ -162,11 +122,11 @@ st.markdown(
         color: #5d534b;
         font-size: 1.08rem;
         line-height: 1.75;
-        margin-bottom: 0.9rem;
+        margin-bottom: 0.2rem;
     }
 
     .glass-card {
-        background: var(--card);
+        background: rgba(255,255,255,0.88);
         backdrop-filter: blur(14px);
         -webkit-backdrop-filter: blur(14px);
         border: 1px solid rgba(255,255,255,0.56);
@@ -177,7 +137,7 @@ st.markdown(
     }
 
     .solid-card {
-        background: var(--card-strong);
+        background: rgba(255,255,255,0.96);
         border: 1px solid rgba(31,41,55,0.06);
         border-radius: 24px;
         padding: 1.2rem;
@@ -309,7 +269,7 @@ st.markdown(
     .ready-chip {
         display: inline-block;
         margin-top: 0.5rem;
-        margin-bottom: 0.55rem;
+        margin-bottom: 0.7rem;
         background: rgba(74,163,102,0.12);
         color: #22613a;
         border: 1px solid rgba(74,163,102,0.18);
@@ -325,39 +285,38 @@ st.markdown(
         overflow: hidden;
         border: 1px solid rgba(31,41,55,0.07);
         box-shadow: var(--shadow-sm);
-        margin-top: 0.4rem;
+        margin-top: 0.2rem;
         background: #0f172a;
-    }
-
-    .scanner-overlay {
-        position: absolute;
-        inset: 0;
-        pointer-events: none;
-        background:
-            linear-gradient(
-                to bottom,
-                rgba(255,255,255,0.00) 0%,
-                rgba(34,211,238,0.12) 42%,
-                rgba(34,211,238,0.45) 50%,
-                rgba(34,211,238,0.12) 58%,
-                rgba(255,255,255,0.00) 100%
-            );
-        animation: scanline 1.6s linear infinite;
-        z-index: 3;
     }
 
     .scanner-tint {
         position: absolute;
         inset: 0;
         pointer-events: none;
-        background: radial-gradient(circle at center, rgba(34,211,238,0.08), rgba(15,23,42,0.12));
-        z-index: 1;
+        background: radial-gradient(circle at center, rgba(34,211,238,0.08), rgba(15,23,42,0.10));
+        z-index: 2;
+    }
+
+    .scanner-overlay {
+        position: absolute;
+        pointer-events: none;
+        background: linear-gradient(
+            to bottom,
+            rgba(255,255,255,0.00) 0%,
+            rgba(34,211,238,0.15) 42%,
+            rgba(34,211,238,0.50) 50%,
+            rgba(34,211,238,0.15) 58%,
+            rgba(255,255,255,0.00) 100%
+        );
+        animation: scanline 1.6s linear infinite;
+        z-index: 5;
+        border-radius: 22px;
     }
 
     .scanner-face-box {
         position: absolute;
         border: 2px solid rgba(34,211,238,0.85);
-        border-radius: 26px;
+        border-radius: 22px;
         box-shadow: 0 0 0 1px rgba(255,255,255,0.10), 0 0 24px rgba(34,211,238,0.35);
         animation: scannerPulse 1.8s ease-in-out infinite;
         z-index: 4;
@@ -370,7 +329,7 @@ st.markdown(
         border-color: rgba(34,211,238,0.95);
         border-style: solid;
         animation: cornerPulse 1.4s ease-in-out infinite;
-        z-index: 5;
+        z-index: 6;
         box-shadow: 0 0 14px rgba(34,211,238,0.30);
     }
 
@@ -406,7 +365,7 @@ st.markdown(
         font-size: 0.82rem;
         font-weight: 700;
         letter-spacing: 0.03em;
-        z-index: 6;
+        z-index: 7;
         border: 1px solid rgba(34,211,238,0.26);
         backdrop-filter: blur(6px);
     }
@@ -417,12 +376,12 @@ st.markdown(
     }
 
     @keyframes scannerPulse {
-        0%, 100% { opacity: 0.75; transform: scale(1); }
-        50% { opacity: 1; transform: scale(1.015); }
+        0%, 100% { opacity: 0.78; transform: scale(1); }
+        50% { opacity: 1; transform: scale(1.01); }
     }
 
     @keyframes cornerPulse {
-        0%, 100% { opacity: 0.7; }
+        0%, 100% { opacity: 0.72; }
         50% { opacity: 1; }
     }
 
@@ -575,9 +534,12 @@ st.markdown(
         min-height: 56px;
         font-size: 1rem;
         box-shadow: 0 10px 20px rgba(185,109,226,0.20);
+        transition: all 0.2s ease;
     }
 
     .stButton > button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 14px 26px rgba(0,0,0,0.12);
         filter: brightness(1.03);
     }
 
@@ -598,7 +560,6 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-
 # ============================================================
 # LOAD MODEL
 # ============================================================
@@ -610,6 +571,10 @@ def load_model():
 model = load_model()
 IMG_SIZE = (224, 224)
 
+# ============================================================
+# MEDIAPIPE SETUP
+# ============================================================
+mp_face_detection = mp.solutions.face_detection
 
 # ============================================================
 # LOAD AQI DATA
@@ -637,7 +602,6 @@ def load_aqi():
 
 aqi_df = load_aqi()
 city_options = sorted(aqi_df["city"].dropna().astype(str).str.title().unique().tolist())
-
 
 # ============================================================
 # HELPERS
@@ -795,11 +759,7 @@ def banner_class(risk_label):
 
 
 def progress_indicator(active_step: int):
-    steps = [
-        (1, "Image"),
-        (2, "Lifestyle"),
-        (3, "Results"),
-    ]
+    steps = [(1, "Image"), (2, "Lifestyle"), (3, "Results")]
     html_parts = ["<div class='progress-wrap'>"]
     for i, (num, label) in enumerate(steps):
         active_cls = "active" if num == active_step else ""
@@ -810,6 +770,10 @@ def progress_indicator(active_step: int):
             html_parts.append("<div class='progress-arrow'>→</div>")
     html_parts.append("</div>")
     st.markdown("".join(html_parts), unsafe_allow_html=True)
+
+
+def spacer(h=20):
+    st.markdown(f"<div style='height:{h}px;'></div>", unsafe_allow_html=True)
 
 
 def image_from_session():
@@ -826,34 +790,46 @@ def save_uploaded_image(file_obj, source_label: str):
 
 def detect_face_box(img_pil):
     img_rgb = np.array(img_pil.convert("RGB"))
-    gray = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2GRAY)
+    img_h, img_w = img_rgb.shape[:2]
 
-    face_cascade = cv2.CascadeClassifier(
-        cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
-    )
+    with mp_face_detection.FaceDetection(
+        model_selection=1,
+        min_detection_confidence=0.5
+    ) as face_detection:
+        results = face_detection.process(img_rgb)
 
-    faces = face_cascade.detectMultiScale(
-        gray,
-        scaleFactor=1.2,
-        minNeighbors=5,
-        minSize=(80, 80),
-    )
+    if results.detections:
+        best_box = None
+        best_area = 0
 
-    if len(faces) > 0:
-        x, y, w, h = faces[0]
-        return x, y, w, h, img_rgb.shape[1], img_rgb.shape[0]
+        for detection in results.detections:
+            bbox = detection.location_data.relative_bounding_box
+
+            x = max(int(bbox.xmin * img_w), 0)
+            y = max(int(bbox.ymin * img_h), 0)
+            w = int(bbox.width * img_w)
+            h = int(bbox.height * img_h)
+
+            area = w * h
+            if area > best_area:
+                best_area = area
+                best_box = (x, y, w, h, img_w, img_h)
+
+        return best_box
+
     return None
 
 
-def render_scanner_preview(img, status_text="Scanning face..."):
+def render_scanner_preview(img, status_text="Scan complete"):
+    face_box = detect_face_box(img)
+
     st.markdown("<div class='scanner-frame'>", unsafe_allow_html=True)
     st.image(img, use_container_width=True)
     st.markdown("<div class='scanner-tint'></div>", unsafe_allow_html=True)
-    st.markdown("<div class='scanner-overlay'></div>", unsafe_allow_html=True)
 
-    face_box = detect_face_box(img)
     if face_box is not None:
         x, y, w, h, img_w, img_h = face_box
+
         left = (x / img_w) * 100
         top = (y / img_h) * 100
         width = (w / img_w) * 100
@@ -862,6 +838,7 @@ def render_scanner_preview(img, status_text="Scanning face..."):
         st.markdown(
             f"""
             <div class='scanner-face-box' style='left:{left}%; top:{top}%; width:{width}%; height:{height}%;'></div>
+            <div class='scanner-overlay' style='left:{left}%; top:{top}%; width:{width}%; height:{height}%;'></div>
             <div class='scanner-corner tl' style='left:calc({left}% - 6px); top:calc({top}% - 6px);'></div>
             <div class='scanner-corner tr' style='left:calc({left + width}% - 28px); top:calc({top}% - 6px);'></div>
             <div class='scanner-corner bl' style='left:calc({left}% - 6px); top:calc({top + height}% - 28px);'></div>
@@ -881,7 +858,6 @@ def predict_visible_photoaging(img_pil):
     x = tf.keras.applications.mobilenet_v2.preprocess_input(img_batch)
     pred = model.predict(x, verbose=0)
     return float(pred[0, 0]), img
-
 
 def run_analysis(hours, cigs, city, sunscreen):
     img_pil = image_from_session()
@@ -929,10 +905,6 @@ def reset_analysis():
     st.session_state.selected_image_source = None
     st.session_state.analysis_complete = False
     st.session_state.result_payload = None
-
-
-def spacer(h=20):
-    st.markdown(f"<div style='height:{h}px;'></div>", unsafe_allow_html=True)
 
 
 # ============================================================
@@ -1160,8 +1132,6 @@ def render_lifestyle_step():
             }
             st.rerun()
 
-    st.markdown("</div>", unsafe_allow_html=True)
-
 
 # ============================================================
 # PROCESSING STEP
@@ -1240,6 +1210,7 @@ def render_results():
 
     spacer(20)
     st.markdown("<div class='section-title' style='font-size:1.28rem; margin-bottom:0.85rem;'>Your skin profile</div>", unsafe_allow_html=True)
+
     overall_short = {
         "Low": "Lower overall risk profile",
         "Moderate": "Moderate overall risk profile",
