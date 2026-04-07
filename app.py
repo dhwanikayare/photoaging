@@ -951,9 +951,9 @@ def render_landing():
 
     spacer(20)
 
-    st.markdown("<div style='text-align:center;'>", unsafe_allow_html=True)
-    analyze_cta = st.button("Analyze My Skin")
-    st.markdown("</div>", unsafe_allow_html=True)
+    btn_l, btn_c, btn_r = st.columns([1, 1.15, 1])
+    with btn_c:
+        analyze_cta = st.button("Analyze My Skin")
 
     if analyze_cta:
         with st.spinner("Preparing analysis..."):
