@@ -1097,10 +1097,11 @@ def render_results():
         "High": "Higher overall risk profile",
     }[result["risk_label"]]
     
-   st.markdown("</div>", unsafe_allow_html=True)
 
     m1, m2, m3 = st.columns(3, gap="medium")
     with m1:
+        
+   st.markdown("</div>", unsafe_allow_html=True)
         st.markdown(
             f"""
             <div class='metric-card'>
