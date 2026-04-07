@@ -207,14 +207,19 @@ st.markdown(
         margin-bottom: 0.85rem;
     }
 
-    .fact-card {
+   .fact-card {
         background: rgba(255,255,255,0.80);
         border: 1px solid rgba(31,41,55,0.06);
         border-radius: 22px;
         padding: 1.1rem;
         box-shadow: var(--shadow-sm);
         height: 100%;
+        min-height: 220px;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
     }
+
 
     .fact-title {
         font-size: 1rem;
@@ -376,13 +381,17 @@ st.markdown(
         line-height: 1.7;
     }
 
-    .metric-card {
+     .metric-card {
         background: rgba(255,255,255,0.88);
         border: 1px solid rgba(31,41,55,0.06);
         border-radius: 22px;
         padding: 1rem 1.1rem;
         box-shadow: var(--shadow-sm);
-        min-height: 132px;
+        min-height: 170px;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
     }
 
     .metric-label {
