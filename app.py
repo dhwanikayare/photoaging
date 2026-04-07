@@ -118,17 +118,34 @@ IMG_SIZE = (224, 224)
 
 # ============================================================
 # LOAD AQI DATA
-# Expected CSV columns:
-# City, Country, PM2.5 AQI Value
+# Supports either:
+# 1. City, Country, PM2.5 AQI Value
+# 2. city, country, pm25_aqi
 # ============================================================
 @st.cache_data
 def load_aqi():
     df = pd.read_csv("city_pm25_aqi.csv")
-    df = df[["City", "Country", "PM2.5 AQI Value"]].dropna().copy()
-    df.columns = ["city", "country", "pm25_aqi"]
+
+    original_cols = set(df.columns)
+
+    if {"City", "Country", "PM2.5 AQI Value"}.issubset(original_cols):
+        df = df[["City", "Country", "PM2.5 AQI Value"]].dropna().copy()
+        df.columns = ["city", "country", "pm25_aqi"]
+
+    elif {"city", "country", "pm25_aqi"}.issubset(original_cols):
+        df = df[["city", "country", "pm25_aqi"]].dropna().copy()
+
+    else:
+        raise ValueError(
+            "The AQI CSV must contain either "
+            "['City', 'Country', 'PM2.5 AQI Value'] "
+            "or ['city', 'country', 'pm25_aqi'] columns."
+        )
+
     df["city"] = df["city"].astype(str).str.strip().str.lower()
     df["country"] = df["country"].astype(str).str.strip().str.lower()
     df = df.groupby(["city", "country"], as_index=False)["pm25_aqi"].mean()
+
     return df
 
 aqi_df = load_aqi()
@@ -206,6 +223,32 @@ def build_recommendations(hours, cigs, pollution_score, sunscreen):
         tips.append("Your current habits look relatively protective. Maintaining them may help reduce long-term photoaging risk.")
 
     return tips
+
+def get_skin_routine(risk_label):
+    if risk_label == "Low":
+        return [
+            "Use a gentle cleanser morning and evening.",
+            "Apply sunscreen daily with broad-spectrum SPF 30 or higher.",
+            "Use a simple moisturizer to support skin barrier health.",
+            "Continue maintaining protective habits such as limiting unnecessary sun exposure."
+        ]
+    elif risk_label == "Moderate":
+        return [
+            "Cleanse gently twice daily and avoid harsh scrubbing.",
+            "Apply broad-spectrum SPF 30 or higher every morning and reapply if outdoors for long periods.",
+            "Use a moisturizer consistently to support skin barrier health.",
+            "Consider adding antioxidant-based skincare to support protection against environmental stress.",
+            "Reduce prolonged direct sun exposure where possible."
+        ]
+    else:
+        return [
+            "Use a gentle, non-irritating cleanser morning and evening.",
+            "Apply broad-spectrum SPF 50 every morning and reapply regularly when outdoors.",
+            "Use a barrier-supporting moisturizer daily.",
+            "Consider antioxidant and pigment-supportive skincare if appropriate.",
+            "Minimize prolonged sun exposure and seek shade during peak UV hours.",
+            "If you are concerned about visible skin changes, consider consulting a dermatologist."
+        ]
 
 def predict_visible_photoaging(img_pil):
     img = img_pil.convert("RGB").resize(IMG_SIZE)
@@ -303,6 +346,7 @@ if submitted:
         risk_label = category(final_score)
         risk_text = get_risk_text(risk_label)
         tips = build_recommendations(hours, cigs, pollution_score, sunscreen)
+        routine = get_skin_routine(risk_label)
 
         st.markdown("<div class='section-card'>", unsafe_allow_html=True)
         st.subheader("3. Your result")
@@ -333,6 +377,12 @@ if submitted:
         st.subheader("Personalized suggestions")
         for tip in tips:
             st.write(f"• {tip}")
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        st.markdown("<div class='section-card'>", unsafe_allow_html=True)
+        st.subheader("Suggested skin care routine")
+        for step in routine:
+            st.write(f"• {step}")
         st.markdown("</div>", unsafe_allow_html=True)
 
         st.markdown("<div class='section-card'>", unsafe_allow_html=True)
